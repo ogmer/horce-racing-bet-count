@@ -1,0 +1,187 @@
+---
+/**
+ * 点数表タブコンポーネント
+ * 早見表、BOX点数表、フォーメーションの3つのタブを切り替える
+ */
+import QuickReferenceTable from './QuickReferenceTable.astro';
+import AllBetTypesPointsDisplay from './AllBetTypesPointsDisplay.astro';
+import FormationCalculator from './FormationCalculator.astro';
+import { DEFAULT_AMOUNT } from '../utils/betCalculations';
+
+export interface Props {
+  horseCount?: number;
+  unitAmount?: number;
+  className?: string;
+}
+
+const { 
+  horseCount = 1, 
+  unitAmount = DEFAULT_AMOUNT,
+  className = '' 
+} = Astro.props;
+---
+
+<div class={`points-table-tabs ${className}`}>
+  <!-- タブヘッダー -->
+  <div class="tabs-header mb-6">
+    <div class="flex border-b border-gray-200">
+      <button
+        type="button"
+        id="tab-quick-reference"
+        class="tab-button active px-6 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-600 transition-all duration-200"
+      >
+        早見表
+      </button>
+      <button
+        type="button"
+        id="tab-box-points"
+        class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-all duration-200"
+      >
+        BOX点数表
+      </button>
+      <button
+        type="button"
+        id="tab-formation"
+        class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-all duration-200"
+      >
+        フォーメーション
+      </button>
+    </div>
+  </div>
+
+  <!-- タブコンテンツ -->
+  <div class="tabs-content">
+    <!-- 早見表タブ -->
+    <div id="content-quick-reference" class="tab-content">
+      <QuickReferenceTable />
+    </div>
+
+    <!-- BOX点数表タブ -->
+    <div id="content-box-points" class="tab-content hidden">
+      <AllBetTypesPointsDisplay 
+        className="w-full"
+        horseCount={horseCount}
+        unitAmount={unitAmount}
+      />
+    </div>
+
+    <!-- フォーメーションタブ -->
+    <div id="content-formation" class="tab-content hidden">
+      <FormationCalculator 
+        className="w-full"
+        unitAmount={unitAmount}
+      />
+    </div>
+  </div>
+</div>
+
+<script>
+  class PointsTableTabs {
+    private container: HTMLElement;
+    private tabButtons: NodeListOf<HTMLButtonElement>;
+    private tabContents: NodeListOf<HTMLElement>;
+    private horseCount: number = 0;
+    private unitAmount: number = 100;
+
+    constructor(container: HTMLElement) {
+      this.container = container;
+      this.tabButtons = container.querySelectorAll('.tab-button');
+      this.tabContents = container.querySelectorAll('.tab-content');
+      this.init();
+    }
+
+    private init(): void {
+      this.tabButtons.forEach((button, index) => {
+        button.addEventListener('click', () => {
+          this.switchTab(index);
+        });
+      });
+
+      // イベントリスナーを設定（bindでメソッドを最適化）
+      this.container.addEventListener('horseCountChange', this.handleHorseCountChange.bind(this));
+      document.addEventListener('amountChange', this.handleAmountChange.bind(this));
+    }
+
+    private handleHorseCountChange(event: Event): void {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail) {
+        this.horseCount = customEvent.detail.horseCount || 1;
+      }
+    }
+
+    private handleAmountChange(event: Event): void {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail && typeof customEvent.detail.amount === 'number') {
+        this.unitAmount = customEvent.detail.amount;
+      }
+    }
+
+    private switchTab(index: number): void {
+      // すべてのタブボタンのアクティブ状態を解除
+      this.tabButtons.forEach(btn => {
+        btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+      });
+
+      // すべてのタブコンテンツを非表示
+      this.tabContents.forEach(content => {
+        content.classList.add('hidden');
+      });
+
+      // 選択されたタブをアクティブに
+      const selectedButton = this.tabButtons[index];
+      const selectedContent = this.tabContents[index];
+
+      if (selectedButton && selectedContent) {
+        selectedButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+        selectedButton.classList.remove('border-transparent', 'text-gray-500');
+        selectedContent.classList.remove('hidden');
+      }
+    }
+  }
+
+  // コンポーネントの初期化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPointsTableTabs);
+  } else {
+    initPointsTableTabs();
+  }
+
+  function initPointsTableTabs(): void {
+    const tabs = document.querySelectorAll('.points-table-tabs');
+    tabs.forEach(tab => {
+      new PointsTableTabs(tab as HTMLElement);
+    });
+  }
+</script>
+
+<style>
+  .tab-button {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .tab-button:hover {
+    color: #2563eb;
+  }
+
+  .tab-button.active {
+    font-weight: 600;
+  }
+
+  .tab-content {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+

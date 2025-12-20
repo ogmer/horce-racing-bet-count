@@ -1,0 +1,747 @@
+---
+/**
+ * 全馬券種別の点数表示コンポーネント
+ * 選択された頭数に基づいて、全ての馬券種別のBOX買い点数を表示する
+ */
+import { getAllBetTypes, calculateBoxPoints, getMinimumHorseCount, formatYenAmount, getPresetAmounts, validateCustomAmount, DEFAULT_AMOUNT } from '../utils/betCalculations';
+
+export interface Props {
+  horseCount?: number;
+  unitAmount?: number;
+  className?: string;
+}
+
+const { 
+  horseCount = 1, 
+  unitAmount = 100,
+  className = '' 
+} = Astro.props;
+
+const allBetTypes = getAllBetTypes();
+
+// 指定された順序で買い目を配置
+// 1行目: 単勝、複勝、馬単
+// 2行目: 枠連・馬連・ワイド、3連複、3連単
+const groupedBetTypes = [];
+const groupedIds = ['wakuren', 'umaren', 'wide'];
+const groupedBetType = allBetTypes.find(bt => bt.id === 'wakuren');
+
+// 1行目の買い目: 単勝、複勝、馬単
+const firstRowIds = ['tansho', 'fukusho', 'umatan'];
+firstRowIds.forEach(id => {
+  const betType = allBetTypes.find(bt => bt.id === id);
+  if (betType) {
+    groupedBetTypes.push(betType);
+  }
+});
+
+// 2行目の1列目: 枠連・馬連・ワイド
+if (groupedBetType) {
+  const wakurenBetType = allBetTypes.find(bt => bt.id === 'wakuren');
+  const umarenBetType = allBetTypes.find(bt => bt.id === 'umaren');
+  const wideBetType = allBetTypes.find(bt => bt.id === 'wide');
+  groupedBetTypes.push({
+    id: 'wakuren',
+    displayName: '枠連・馬連・ワイド',
+    description: `枠連: ${wakurenBetType?.description || ''}\n馬連: ${umarenBetType?.description || ''}\nワイド: ${wideBetType?.description || ''}`,
+    points: groupedBetType.points
+  });
+}
+
+// 2行目の2-3列目: 3連複、3連単
+const secondRowIds = ['sanrenpuku', 'sanrentan'];
+secondRowIds.forEach(id => {
+  const betType = allBetTypes.find(bt => bt.id === id);
+  if (betType) {
+    groupedBetTypes.push(betType);
+  }
+});
+
+const betTypes = groupedBetTypes;
+---
+
+<div class={`all-bet-types-points-display ${className}`} data-initial-amount={unitAmount}>
+  <h3 class="text-2xl font-bold text-gray-800 mb-4">BOX点数表</h3>
+  
+  <!-- 頭数選択 -->
+  <div class="horse-count-selection mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+    <label for="box-horse-count-input" class="block text-base font-semibold text-gray-700 mb-3">
+      BOX買いの頭数を選択
+    </label>
+    <p class="text-xs text-gray-500 mb-3">範囲：1頭〜18頭</p>
+    <div class="flex items-center space-x-3">
+      <button
+        type="button"
+        id="box-decrease-count"
+        class="count-button bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+        title="頭数を減らす"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+        </svg>
+      </button>
+      
+      <input
+        type="number"
+        id="box-horse-count-input"
+        min="1"
+        max="18"
+        value={horseCount || 1}
+        class="count-input w-20 text-center px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+      />
+      
+      <button
+        type="button"
+        id="box-increase-count"
+        class="count-button bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+        title="頭数を増やす"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      </button>
+    </div>
+  </div>
+  
+  {horseCount > 0 ? (
+    <div class="points-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {betTypes.map((betType) => {
+        const minCount = getMinimumHorseCount(betType.id);
+        const maxCount = 18;
+        const isValid = horseCount >= minCount && horseCount < maxCount + 1;
+        const points = isValid ? calculateBoxPoints(betType.id, horseCount) : 0;
+        const totalAmount = points * unitAmount;
+        const cardClass = isValid 
+          ? 'bet-type-point-card p-4 rounded-lg border-2 transition-all duration-200 bg-white border-blue-200 hover:border-blue-400 hover:shadow-md'
+          : 'bet-type-point-card p-4 rounded-lg border-2 transition-all duration-200 bg-gray-100 border-gray-200 opacity-60';
+        
+        return (
+          <div class={`${cardClass} relative flex flex-col`} data-bet-type-id={betType.id}>
+            <div class="flex-1">
+              <div class="bet-type-name text-lg font-bold text-gray-800 mb-2">
+                {betType.displayName}
+              </div>
+              
+              {isValid ? (
+                <div>
+                  <div class="points-amount-row flex items-end justify-between mb-2">
+                    <div class="points-display">
+                      <div class="text-sm text-gray-600">点数</div>
+                      <div class="text-2xl font-bold text-blue-600">{points}点</div>
+                    </div>
+                    <div class="amount-display text-right">
+                      <div class="text-xs text-gray-600 mb-1">合計金額</div>
+                      <div class="text-lg font-semibold text-green-600">
+                        {formatYenAmount(totalAmount)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="calculation-display mb-2">
+                    <div class="text-xs text-gray-500">
+                      {horseCount}頭のBOX買い
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div class="invalid-message text-sm text-gray-500">
+                  最小{minCount}頭以上必要
+                </div>
+              )}
+            </div>
+            
+            {betType.description && (
+              <div class="bet-type-description mt-2 pt-2 border-t border-gray-200 text-xs text-blue-600 leading-relaxed">
+                {betType.description.split('\n').map((line, index) => (
+                  <div key={index} class="mb-1">{line}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  ) : null}
+  
+  <!-- 1点当たりの金額選択 -->
+  <div class="amount-selection mt-6 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+    <label class="block text-base font-semibold text-gray-700 mb-3">
+      1点当たりの金額を選択
+    </label>
+    
+    <!-- プリセット金額ボタン -->
+    <div class="preset-amounts mb-4">
+      <h4 class="text-sm font-medium text-gray-600 mb-3">プリセット金額</h4>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {getPresetAmounts().map((amount) => (
+          <button
+            type="button"
+            data-preset-amount={amount}
+            class={`preset-button ${
+              unitAmount === amount
+                ? 'selected bg-green-500 text-white border-green-600 shadow-lg' 
+                : 'unselected bg-white text-gray-700 border-gray-300 hover:bg-green-50 hover:border-green-300'
+            } border-2 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2`}
+            aria-pressed={unitAmount === amount}
+          >
+            {formatYenAmount(amount)}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <!-- カスタム金額入力 -->
+    <div class="custom-amount">
+      <h4 class="text-sm font-medium text-gray-600 mb-3">カスタム金額</h4>
+      <div class="flex items-center space-x-3">
+        <div class="flex-1">
+          <div class="relative">
+            <input
+              type="text"
+              id="box-custom-amount-input"
+              placeholder="金額を入力"
+              class="custom-input w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+              maxlength="10"
+            />
+            <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">円</span>
+          </div>
+          <div id="box-amount-error-message" class="error-message mt-2 text-sm text-red-600 flex items-center hidden">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <span class="error-text"></span>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="box-clear-custom-button"
+          class="clear-button px-4 py-3 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          title="クリア"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { 
+    getAllBetTypes, 
+    calculateBoxPoints, 
+    getMinimumHorseCount,
+    formatYenAmount,
+    getPresetAmounts,
+    validateCustomAmount,
+    DEFAULT_AMOUNT
+  } from '../utils/betCalculations';
+
+  class AllBetTypesPointsDisplay {
+    private container: HTMLElement;
+    private horseCount: number = 0;
+    private unitAmount: number = DEFAULT_AMOUNT;
+    private countInput: HTMLInputElement | null = null;
+    private decreaseButton: HTMLButtonElement | null = null;
+    private increaseButton: HTMLButtonElement | null = null;
+    
+    // 金額選択関連
+    private presetButtons: NodeListOf<HTMLButtonElement> | null = null;
+    private customInput: HTMLInputElement | null = null;
+    private clearButton: HTMLButtonElement | null = null;
+    private errorContainer: HTMLElement | null = null;
+    private customAmount: string = '';
+    private validationError: string | null = null;
+    private isUsingCustomAmount: boolean = false;
+
+    constructor(container: HTMLElement) {
+      this.container = container;
+      this.init();
+    }
+
+    private init(): void {
+      // 頭数選択要素を取得
+      this.countInput = this.container.querySelector('#box-horse-count-input') as HTMLInputElement;
+      this.decreaseButton = this.container.querySelector('#box-decrease-count') as HTMLButtonElement;
+      this.increaseButton = this.container.querySelector('#box-increase-count') as HTMLButtonElement;
+
+      // 金額選択要素を取得
+      this.presetButtons = this.container.querySelectorAll('.preset-button');
+      this.customInput = this.container.querySelector('#box-custom-amount-input') as HTMLInputElement;
+      this.clearButton = this.container.querySelector('#box-clear-custom-button') as HTMLButtonElement;
+      this.errorContainer = this.container.querySelector('#box-amount-error-message') as HTMLElement;
+
+      // 初期値を設定
+      if (this.countInput) {
+        this.horseCount = parseInt(this.countInput.value) || 1;
+      }
+      
+      // 初期金額を設定（propsから取得）
+      const initialAmountAttr = this.container.getAttribute('data-initial-amount');
+      if (initialAmountAttr) {
+        const parsed = parseInt(initialAmountAttr);
+        if (!isNaN(parsed) && parsed > 0) {
+          this.unitAmount = parsed;
+        }
+      }
+
+      // イベントリスナーを設定
+      this.setupHorseCountListeners();
+      this.setupAmountListeners();
+
+      // 初期表示
+      this.updateAmountUI();
+      this.updateDisplay();
+    }
+
+    private setupHorseCountListeners(): void {
+      // 頭数入力
+      if (this.countInput) {
+        this.countInput.addEventListener('input', () => {
+          const count = parseInt(this.countInput?.value || '1') || 1;
+          this.setHorseCount(count);
+        });
+      }
+
+      // 減少ボタン
+      if (this.decreaseButton) {
+        this.decreaseButton.addEventListener('click', () => {
+          this.setHorseCount(this.horseCount - 1);
+        });
+      }
+
+      // 増加ボタン
+      if (this.increaseButton) {
+        this.increaseButton.addEventListener('click', () => {
+          this.setHorseCount(this.horseCount + 1);
+        });
+      }
+    }
+
+    private setupAmountListeners(): void {
+      // プリセットボタンのイベント設定
+      if (this.presetButtons) {
+        this.presetButtons.forEach(button => {
+          button.addEventListener('click', (event) => {
+            event.preventDefault();
+            const amount = parseInt(button.dataset.presetAmount || '0', 10);
+            if (amount > 0) {
+              this.selectPresetAmount(amount);
+            }
+          });
+        });
+      }
+
+      // カスタム入力のイベント設定
+      if (this.customInput) {
+        this.customInput.addEventListener('input', (event) => {
+          const target = event.target as HTMLInputElement;
+          this.handleCustomInput(target.value);
+        });
+
+        this.customInput.addEventListener('blur', () => {
+          this.validateAndApplyCustomAmount();
+        });
+
+        // 数字のみ入力を許可
+        this.customInput.addEventListener('keypress', (event) => {
+          if (!/[\d]/.test(event.key) && !['Backspace', 'Delete', 'Tab', 'Enter'].includes(event.key)) {
+            event.preventDefault();
+          }
+        });
+      }
+
+      // クリアボタンのイベント設定
+      if (this.clearButton) {
+        this.clearButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          this.clearCustomAmount();
+        });
+      }
+    }
+
+    private selectPresetAmount(amount: number): void {
+      this.unitAmount = amount;
+      this.isUsingCustomAmount = false;
+      this.customAmount = '';
+      this.validationError = null;
+      
+      // カスタム入力をクリア
+      if (this.customInput) {
+        this.customInput.value = '';
+      }
+      
+      this.updateAmountUI();
+      this.updateDisplay();
+      this.dispatchAmountChangeEvent();
+    }
+
+    private handleCustomInput(value: string): void {
+      this.customAmount = value;
+      
+      if (value.trim()) {
+        this.isUsingCustomAmount = true;
+        // プリセットボタンの選択を解除
+        this.clearPresetSelection();
+      } else {
+        this.isUsingCustomAmount = false;
+        this.validationError = null;
+      }
+    }
+
+    private validateAndApplyCustomAmount(): void {
+      if (!this.customAmount.trim()) {
+        this.isUsingCustomAmount = false;
+        this.validationError = null;
+        this.unitAmount = DEFAULT_AMOUNT;
+        this.updateAmountUI();
+        this.updateDisplay();
+        this.dispatchAmountChangeEvent();
+        return;
+      }
+
+      const validation = validateCustomAmount(this.customAmount);
+      
+      if (validation.isValid) {
+        this.unitAmount = validation.value;
+        this.validationError = null;
+        this.isUsingCustomAmount = true;
+      } else {
+        this.validationError = validation.errorMessage || 'エラーが発生しました';
+      }
+      
+      this.updateAmountUI();
+      this.updateDisplay();
+      
+      if (validation.isValid) {
+        this.dispatchAmountChangeEvent();
+      }
+    }
+
+    private clearCustomAmount(): void {
+      this.customAmount = '';
+      if (this.customInput) {
+        this.customInput.value = '';
+      }
+      this.isUsingCustomAmount = false;
+      this.validationError = null;
+      this.unitAmount = DEFAULT_AMOUNT;
+      
+      this.updateAmountUI();
+      this.updateDisplay();
+      this.dispatchAmountChangeEvent();
+    }
+
+    private clearPresetSelection(): void {
+      if (this.presetButtons) {
+        this.presetButtons.forEach(button => {
+          button.classList.remove('selected', 'bg-green-500', 'text-white', 'border-green-600', 'shadow-lg');
+          button.classList.add('unselected', 'bg-white', 'text-gray-700', 'border-gray-300');
+          button.setAttribute('aria-pressed', 'false');
+        });
+      }
+    }
+
+    private updateAmountUI(): void {
+      // プリセットボタンの状態更新
+      if (!this.isUsingCustomAmount && this.presetButtons) {
+        this.presetButtons.forEach(button => {
+          const amount = parseInt(button.dataset.presetAmount || '0', 10);
+          if (amount === this.unitAmount) {
+            button.classList.remove('unselected', 'bg-white', 'text-gray-700', 'border-gray-300');
+            button.classList.add('selected', 'bg-green-500', 'text-white', 'border-green-600', 'shadow-lg');
+            button.setAttribute('aria-pressed', 'true');
+          } else {
+            button.classList.remove('selected', 'bg-green-500', 'text-white', 'border-green-600', 'shadow-lg');
+            button.classList.add('unselected', 'bg-white', 'text-gray-700', 'border-gray-300');
+            button.setAttribute('aria-pressed', 'false');
+          }
+        });
+      } else {
+        this.clearPresetSelection();
+      }
+
+      // カスタム入力の状態更新
+      this.updateCustomInputStyle();
+      this.updateErrorDisplay();
+    }
+
+    private updateCustomInputStyle(): void {
+      if (!this.customInput) return;
+      
+      this.customInput.classList.remove('border-red-300', 'bg-red-50', 'text-red-700', 'border-blue-300', 'bg-blue-50', 'border-gray-300');
+      
+      if (this.validationError) {
+        this.customInput.classList.add('border-red-300', 'bg-red-50', 'text-red-700');
+      } else if (this.customAmount) {
+        this.customInput.classList.add('border-blue-300', 'bg-blue-50');
+      } else {
+        this.customInput.classList.add('border-gray-300');
+      }
+    }
+
+    private updateErrorDisplay(): void {
+      if (!this.errorContainer) return;
+      
+      const errorText = this.errorContainer.querySelector('.error-text') as HTMLElement;
+      
+      if (this.validationError) {
+        this.errorContainer.classList.remove('hidden');
+        if (errorText) {
+          errorText.textContent = this.validationError;
+        }
+      } else {
+        this.errorContainer.classList.add('hidden');
+      }
+    }
+
+    private dispatchAmountChangeEvent(): void {
+      const event = new CustomEvent('amountChange', {
+        detail: { 
+          amount: this.unitAmount,
+          isCustom: this.isUsingCustomAmount,
+          customValue: this.customAmount,
+          isValid: !this.validationError
+        },
+        bubbles: true
+      });
+      this.container.dispatchEvent(event);
+    }
+
+    private setHorseCount(count: number): void {
+      // 範囲チェック
+      count = Math.max(1, Math.min(18, count));
+      this.horseCount = count;
+
+      // UI更新
+      if (this.countInput) {
+        this.countInput.value = count.toString();
+      }
+
+      // 表示を更新
+      this.updateDisplay();
+
+      // イベントを発行（他のコンポーネントに通知）
+      const event = new CustomEvent('horseCountChange', {
+        detail: {
+          horseCount: this.horseCount,
+          points: 0,
+          isCustomMode: false,
+          betTypeId: null
+        },
+        bubbles: true
+      });
+      this.container.dispatchEvent(event);
+    }
+
+    private updateDisplay(): void {
+      const allBetTypes = getAllBetTypes();
+      
+      // 指定された順序で買い目を配置
+      // 1行目: 単勝、複勝、馬単
+      // 2行目: 枠連・馬連・ワイド、3連複、3連単
+      const groupedBetTypes = [];
+      const groupedIds = ['wakuren', 'umaren', 'wide'];
+      const groupedBetType = allBetTypes.find(bt => bt.id === 'wakuren');
+      
+      // 1行目の買い目: 単勝、複勝、馬単
+      const firstRowIds = ['tansho', 'fukusho', 'umatan'];
+      firstRowIds.forEach(id => {
+        const betType = allBetTypes.find(bt => bt.id === id);
+        if (betType) {
+          groupedBetTypes.push(betType);
+        }
+      });
+      
+      // 2行目の1列目: 枠連・馬連・ワイド
+      if (groupedBetType) {
+        const wakurenBetType = allBetTypes.find(bt => bt.id === 'wakuren');
+        const umarenBetType = allBetTypes.find(bt => bt.id === 'umaren');
+        const wideBetType = allBetTypes.find(bt => bt.id === 'wide');
+        groupedBetTypes.push({
+          id: 'wakuren',
+          displayName: '枠連・馬連・ワイド',
+          description: `枠連: ${wakurenBetType?.description || ''}\n馬連: ${umarenBetType?.description || ''}\nワイド: ${wideBetType?.description || ''}`,
+          points: groupedBetType.points
+        });
+      }
+      
+      // 2行目の2-3列目: 3連複、3連単
+      const secondRowIds = ['sanrenpuku', 'sanrentan'];
+      secondRowIds.forEach(id => {
+        const betType = allBetTypes.find(bt => bt.id === id);
+        if (betType) {
+          groupedBetTypes.push(betType);
+        }
+      });
+      
+      const betTypes = groupedBetTypes;
+      const grid = this.container.querySelector('.points-grid') as HTMLElement;
+      const emptyState = this.container.querySelector('.empty-state') as HTMLElement;
+
+      if (this.horseCount >= 1) {
+        // グリッドを表示
+        if (emptyState) emptyState.style.display = 'none';
+        if (grid) {
+          grid.innerHTML = '';
+          
+          betTypes.forEach((betType) => {
+            const minCount = getMinimumHorseCount(betType.id);
+            const maxCount = 18;
+            const isValid = this.horseCount >= minCount && this.horseCount < maxCount + 1;
+            const points = isValid ? calculateBoxPoints(betType.id, this.horseCount) : 0;
+            const totalAmount = points * this.unitAmount;
+
+            const card = document.createElement('div');
+            card.className = `bet-type-point-card relative flex flex-col p-4 rounded-lg border-2 transition-all duration-200 ${
+              isValid 
+                ? 'bg-white border-blue-200 hover:border-blue-400 hover:shadow-md' 
+                : 'bg-gray-100 border-gray-200 opacity-60'
+            }`;
+            card.setAttribute('data-bet-type-id', betType.id);
+
+            const descriptionHtml = betType.description 
+              ? betType.description.split('\n').map(line => `<div class="mb-1">${line}</div>`).join('')
+              : '';
+
+            card.innerHTML = `
+              <div class="flex-1">
+                <div class="bet-type-name text-lg font-bold text-gray-800 mb-2">
+                  ${betType.displayName}
+                </div>
+                ${isValid ? `
+                  <div class="points-amount-row flex items-end justify-between mb-2">
+                    <div class="points-display">
+                      <div class="text-sm text-gray-600">点数</div>
+                      <div class="text-2xl font-bold text-blue-600">${points}点</div>
+                    </div>
+                    <div class="amount-display text-right">
+                      <div class="text-xs text-gray-600 mb-1">合計金額</div>
+                      <div class="text-lg font-semibold text-green-600">
+                        ${formatYenAmount(totalAmount)}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="calculation-display mb-2">
+                    <div class="text-xs text-gray-500">
+                      ${this.horseCount}頭のBOX買い
+                    </div>
+                  </div>
+                ` : `
+                  <div class="invalid-message text-sm text-gray-500">
+                    最小${minCount}頭以上必要
+                  </div>
+                `}
+              </div>
+              ${betType.description ? `
+                <div class="bet-type-description mt-2 pt-2 border-t border-gray-200 text-xs text-blue-600 leading-relaxed">
+                  ${descriptionHtml}
+                </div>
+              ` : ''}
+            `;
+
+            grid.appendChild(card);
+          });
+        }
+      } else {
+        // 空の状態を表示
+        if (grid) grid.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'block';
+      }
+    }
+  }
+
+  // コンポーネントの初期化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllBetTypesPointsDisplay);
+  } else {
+    initAllBetTypesPointsDisplay();
+  }
+
+  function initAllBetTypesPointsDisplay(): void {
+    const displays = document.querySelectorAll('.all-bet-types-points-display');
+    displays.forEach(display => {
+      new AllBetTypesPointsDisplay(display as HTMLElement);
+    });
+  }
+</script>
+
+<style>
+  .points-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    align-items: stretch;
+  }
+  
+  .bet-type-point-card {
+    transition: transform 0.2s ease-in-out;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+  }
+
+  .bet-type-point-card:hover {
+    transform: translateY(-2px);
+  }
+  
+  .bet-type-point-card > .flex-1 {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  
+  .bet-type-description {
+    white-space: normal;
+    word-wrap: break-word;
+    flex-shrink: 0;
+  }
+  
+  .points-amount-row {
+    min-height: 60px;
+  }
+  
+  @media (max-width: 1024px) {
+    .points-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .points-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* 金額選択のスタイル */
+  .preset-button:hover {
+    transform: translateY(-1px);
+  }
+
+  .preset-button.selected {
+    transform: translateY(-2px);
+  }
+
+  .preset-button:active {
+    transform: translateY(0);
+  }
+
+  .custom-input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 640px) {
+    .preset-amounts .grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+    
+    .preset-button {
+      padding: 0.5rem;
+      font-size: 0.75rem;
+    }
+  }
+</style>
+

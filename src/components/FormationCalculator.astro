@@ -1,0 +1,542 @@
+---
+/**
+ * フォーメーション計算コンポーネント
+ * 各買い目で選んだ馬の点数を計算する
+ */
+import { getAllBetTypes, getMinimumHorseCount, formatYenAmount } from '../utils/betCalculations';
+
+export interface Props {
+  unitAmount?: number;
+  className?: string;
+}
+
+const { 
+  unitAmount = 100,
+  className = '' 
+} = Astro.props;
+
+const betTypes = getAllBetTypes();
+
+// 枠の色定義
+const frameColors = [
+  { num: 1, bg: 'bg-white', border: 'border-gray-300' },
+  { num: 2, bg: 'bg-gray-300', border: 'border-gray-400' },
+  { num: 3, bg: 'bg-red-200', border: 'border-red-300' },
+  { num: 4, bg: 'bg-blue-200', border: 'border-blue-300' },
+  { num: 5, bg: 'bg-yellow-200', border: 'border-yellow-300' },
+  { num: 6, bg: 'bg-green-200', border: 'border-green-300' },
+  { num: 7, bg: 'bg-orange-200', border: 'border-orange-300' },
+  { num: 8, bg: 'bg-pink-200', border: 'border-pink-300' },
+];
+---
+
+<div class={`formation-calculator ${className}`}>
+  <h3 class="text-xl font-bold text-gray-800 mb-4">フォーメーション計算</h3>
+  
+  <div class="formation-sections space-y-6">
+    {betTypes.map((betType) => {
+      const minCount = getMinimumHorseCount(betType.id);
+      const maxCount = betType.id === 'sanrenpuku' || betType.id === 'sanrentan' ? 3 : 2;
+      return (
+        <div class="formation-section p-4 bg-white border-2 border-gray-200 rounded-lg" data-bet-type-id={betType.id}>
+          <div class="bet-type-header mb-4">
+            <h4 class="text-lg font-bold text-gray-800">{betType.displayName}</h4>
+            <p class="text-xs text-gray-500 mt-1">{betType.description || ''}</p>
+          </div>
+          
+          <!-- 頭数選択 -->
+          <div class="horse-count-selector mb-4 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              頭数を選択
+            </label>
+            <div class="flex items-center space-x-3">
+              {Array.from({ length: maxCount - minCount + 1 }, (_, i) => {
+                const count = minCount + i;
+                return (
+                  <button
+                    type="button"
+                    data-horse-count={count}
+                    class={`count-button px-4 py-2 rounded-lg border-2 transition-all duration-200 ${
+                      count === minCount
+                        ? 'bg-blue-500 text-white border-blue-600 shadow-lg'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:border-blue-300'
+                    }`}
+                  >
+                    {count}頭
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          
+          <!-- フォーメーションテーブル -->
+          <div class="formation-table-container" data-table-container={betType.id}>
+            <div class="table-wrapper overflow-x-auto">
+              <table class="formation-table w-full border-collapse border border-gray-300">
+                <thead>
+                  <!-- 枠ヘッダー行 -->
+                  <tr>
+                    <th class="px-3 py-2 border border-gray-300 bg-gray-100 font-bold text-sm">枠</th>
+                    {Array.from({ length: 8 }, (_, i) => {
+                      const frameNum = i + 1;
+                      const frameColor = frameColors[i];
+                      return (
+                        <th class={`px-3 py-2 border border-gray-300 font-bold text-sm ${frameColor.bg} ${frameColor.border}`}>
+                          {frameNum}
+                        </th>
+                      );
+                    })}
+                    <th class="px-3 py-2 border border-gray-300 bg-gray-100 font-bold text-sm">
+                      <button
+                        type="button"
+                        class="select-all-button w-full px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                        data-select-all={betType.id}
+                      >
+                        全頭
+                      </button>
+                    </th>
+                    <th class="px-3 py-2 border border-gray-300 bg-gray-100 font-bold text-sm">
+                      <button
+                        type="button"
+                        class="clear-all-button w-full px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                        data-clear-all={betType.id}
+                      >
+                        全消
+                      </button>
+                    </th>
+                  </tr>
+                  <!-- 馬番ヘッダー行 -->
+                  <tr>
+                    <th class="px-3 py-2 border border-gray-300 bg-gray-100 font-semibold text-sm">馬番</th>
+                    {Array.from({ length: 8 }, (_, i) => (
+                      <th class="px-3 py-2 border border-gray-300 bg-white font-semibold text-sm">
+                        {i + 1}
+                      </th>
+                    ))}
+                    <th class="px-3 py-2 border border-gray-300 bg-gray-100 font-semibold text-sm">全</th>
+                    <th class="px-3 py-2 border border-gray-300 bg-gray-100 font-semibold text-sm">消</th>
+                  </tr>
+                </thead>
+                <tbody data-horse-rows={betType.id}>
+                  {Array.from({ length: maxCount }, (_, i) => {
+                    const position = i + 1;
+                    const isVisible = position < minCount + 1;
+                    const displayStyle = isVisible ? '' : 'display: none;';
+                    return (
+                      <tr 
+                        class="horse-row" 
+                        data-position={position} 
+                        data-bet-type={betType.id}
+                        style={displayStyle}
+                      >
+                        <td class="px-3 py-2 border border-gray-300 bg-gray-50 font-medium text-sm">
+                          {position}頭目
+                        </td>
+                        {Array.from({ length: 8 }, (_, j) => {
+                          const horseNum = j + 1;
+                          return (
+                            <td class="px-3 py-2 border border-gray-300 text-center">
+                              <input
+                                type="checkbox"
+                                class="horse-checkbox w-5 h-5 cursor-pointer"
+                                data-horse-num={horseNum}
+                                data-position={position}
+                                data-bet-type={betType.id}
+                              />
+                            </td>
+                          );
+                        })}
+                        <td class="px-3 py-2 border border-gray-300 text-center">
+                          <button
+                            type="button"
+                            class="select-row-button px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+                            data-select-row={betType.id}
+                            data-position={position}
+                          >
+                            全
+                          </button>
+                        </td>
+                        <td class="px-3 py-2 border border-gray-300 text-center">
+                          <button
+                            type="button"
+                            class="clear-row-button px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
+                            data-clear-row={betType.id}
+                            data-position={position}
+                          >
+                            消
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- 計算結果 -->
+          <div class="calculation-result mt-4">
+            <div class="result-display p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div class="text-sm text-blue-600 font-medium mb-1">計算結果</div>
+              <div class="points-result text-lg font-bold text-blue-800" data-result={betType.id}>
+                馬番を選択してください
+              </div>
+              <div class="amount-result text-sm text-green-600 mt-1" data-amount={betType.id}>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+<script>
+  import { formatYenAmount, getMinimumHorseCount } from '../utils/betCalculations';
+
+  class FormationCalculator {
+    private container: HTMLElement;
+    private unitAmount: number = 100;
+    private betTypeStates: Map<string, {
+      horseCount: number;
+      selections: Map<number, Set<number>>; // position -> Set<horseNum>
+    }> = new Map();
+
+    constructor(container: HTMLElement) {
+      this.container = container;
+      this.init();
+    }
+
+    private init(): void {
+      // 金額変更イベントをリッスン
+      document.addEventListener('amountChange', (event: any) => {
+        if (event.detail && typeof event.detail.amount === 'number') {
+          this.unitAmount = event.detail.amount;
+          this.updateAllCalculations();
+        }
+      });
+
+      // 各買い目セクションを初期化
+      const sections = this.container.querySelectorAll('.formation-section');
+      sections.forEach(section => {
+        const betTypeId = section.getAttribute('data-bet-type-id');
+        if (!betTypeId) return;
+
+        const minCount = getMinimumHorseCount(betTypeId);
+        const maxCount = betTypeId === 'sanrenpuku' || betTypeId === 'sanrentan' ? 3 : 2;
+        
+        // 初期状態を設定
+        this.betTypeStates.set(betTypeId, {
+          horseCount: minCount,
+          selections: new Map()
+        });
+
+        // 頭数選択ボタン
+        const countButtons = section.querySelectorAll('.count-button');
+        countButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            const count = parseInt(button.getAttribute('data-horse-count') || '0');
+            this.setHorseCount(betTypeId, count);
+          });
+        });
+
+        // 全選択ボタン
+        const selectAllButton = section.querySelector(`[data-select-all="${betTypeId}"]`);
+        if (selectAllButton) {
+          selectAllButton.addEventListener('click', () => {
+            this.selectAllHorses(betTypeId);
+          });
+        }
+
+        // 全消ボタン
+        const clearAllButton = section.querySelector(`[data-clear-all="${betTypeId}"]`);
+        if (clearAllButton) {
+          clearAllButton.addEventListener('click', () => {
+            this.clearAllHorses(betTypeId);
+          });
+        }
+
+        // チェックボックス
+        const checkboxes = section.querySelectorAll(`.horse-checkbox[data-bet-type="${betTypeId}"]`);
+        checkboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', () => {
+            const position = parseInt(checkbox.getAttribute('data-position') || '0');
+            const horseNum = parseInt(checkbox.getAttribute('data-horse-num') || '0');
+            this.toggleHorse(betTypeId, position, horseNum, (checkbox as HTMLInputElement).checked);
+          });
+        });
+
+        // 行選択ボタン
+        const selectRowButtons = section.querySelectorAll(`[data-select-row="${betTypeId}"]`);
+        selectRowButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            const position = parseInt(button.getAttribute('data-position') || '0');
+            this.selectRow(betTypeId, position);
+          });
+        });
+
+        // 行クリアボタン
+        const clearRowButtons = section.querySelectorAll(`[data-clear-row="${betTypeId}"]`);
+        clearRowButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            const position = parseInt(button.getAttribute('data-position') || '0');
+            this.clearRow(betTypeId, position);
+          });
+        });
+      });
+
+      // 初期表示を更新
+      this.updateAllCalculations();
+    }
+
+    private setHorseCount(betTypeId: string, count: number): void {
+      const state = this.betTypeStates.get(betTypeId);
+      if (!state) return;
+
+      state.horseCount = count;
+      
+      // 頭数ボタンの状態を更新
+      const section = this.container.querySelector(`[data-bet-type-id="${betTypeId}"]`);
+      if (section) {
+        const countButtons = section.querySelectorAll('.count-button');
+        countButtons.forEach(button => {
+          const buttonCount = parseInt(button.getAttribute('data-horse-count') || '0');
+          if (buttonCount === count) {
+            button.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+            button.classList.add('bg-blue-500', 'text-white', 'border-blue-600', 'shadow-lg');
+          } else {
+            button.classList.remove('bg-blue-500', 'text-white', 'border-blue-600', 'shadow-lg');
+            button.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+          }
+        });
+
+        // 行の表示/非表示を更新
+        const rows = section.querySelectorAll(`[data-horse-rows="${betTypeId}"] .horse-row`);
+        rows.forEach((row, index) => {
+          const position = index + 1;
+          if (position <= count) {
+            (row as HTMLElement).style.display = '';
+          } else {
+            (row as HTMLElement).style.display = 'none';
+            // 非表示の行の選択をクリア
+            state.selections.delete(position);
+          }
+        });
+      }
+
+      this.calculateForBetType(betTypeId);
+    }
+
+    private toggleHorse(betTypeId: string, position: number, horseNum: number, checked: boolean): void {
+      const state = this.betTypeStates.get(betTypeId);
+      if (!state) return;
+
+      if (!state.selections.has(position)) {
+        state.selections.set(position, new Set());
+      }
+
+      const selection = state.selections.get(position)!;
+      if (checked) {
+        selection.add(horseNum);
+      } else {
+        selection.delete(horseNum);
+      }
+
+      this.calculateForBetType(betTypeId);
+    }
+
+    private selectAllHorses(betTypeId: string): void {
+      const state = this.betTypeStates.get(betTypeId);
+      if (!state) return;
+
+      for (let pos = 1; pos <= state.horseCount; pos++) {
+        if (!state.selections.has(pos)) {
+          state.selections.set(pos, new Set());
+        }
+        const selection = state.selections.get(pos)!;
+        for (let num = 1; num <= 8; num++) {
+          selection.add(num);
+        }
+      }
+
+      this.updateCheckboxes(betTypeId);
+      this.calculateForBetType(betTypeId);
+    }
+
+    private clearAllHorses(betTypeId: string): void {
+      const state = this.betTypeStates.get(betTypeId);
+      if (!state) return;
+
+      state.selections.clear();
+      this.updateCheckboxes(betTypeId);
+      this.calculateForBetType(betTypeId);
+    }
+
+    private selectRow(betTypeId: string, position: number): void {
+      const state = this.betTypeStates.get(betTypeId);
+      if (!state) return;
+
+      if (!state.selections.has(position)) {
+        state.selections.set(position, new Set());
+      }
+
+      const selection = state.selections.get(position)!;
+      for (let num = 1; num <= 8; num++) {
+        selection.add(num);
+      }
+
+      this.updateCheckboxes(betTypeId);
+      this.calculateForBetType(betTypeId);
+    }
+
+    private clearRow(betTypeId: string, position: number): void {
+      const state = this.betTypeStates.get(betTypeId);
+      if (!state) return;
+
+      state.selections.delete(position);
+      this.updateCheckboxes(betTypeId);
+      this.calculateForBetType(betTypeId);
+    }
+
+    private updateCheckboxes(betTypeId: string): void {
+      const state = this.betTypeStates.get(betTypeId);
+      if (!state) return;
+
+      const section = this.container.querySelector(`[data-bet-type-id="${betTypeId}"]`);
+      if (!section) return;
+
+      const checkboxes = section.querySelectorAll(`.horse-checkbox[data-bet-type="${betTypeId}"]`);
+      checkboxes.forEach(checkbox => {
+        const position = parseInt(checkbox.getAttribute('data-position') || '0');
+        const horseNum = parseInt(checkbox.getAttribute('data-horse-num') || '0');
+        const selection = state.selections.get(position);
+        (checkbox as HTMLInputElement).checked = selection ? selection.has(horseNum) : false;
+      });
+    }
+
+    private calculateForBetType(betTypeId: string): void {
+      const state = this.betTypeStates.get(betTypeId);
+      if (!state) return;
+
+      const resultDisplay = this.container.querySelector(`[data-result="${betTypeId}"]`) as HTMLElement;
+      const amountDisplay = this.container.querySelector(`[data-amount="${betTypeId}"]`) as HTMLElement;
+
+      // 選択された馬を確認
+      const selectedPositions: number[][] = [];
+      for (let pos = 1; pos <= state.horseCount; pos++) {
+        const selection = state.selections.get(pos);
+        if (!selection || selection.size === 0) {
+          if (resultDisplay) resultDisplay.textContent = 'すべての頭目で馬番を選択してください';
+          if (amountDisplay) amountDisplay.textContent = '';
+          return;
+        }
+        selectedPositions.push(Array.from(selection).sort((a, b) => a - b));
+      }
+
+      // 点数を計算
+      const points = this.calculateFormationPoints(betTypeId, selectedPositions);
+      const totalAmount = points * this.unitAmount;
+
+      if (resultDisplay) {
+        resultDisplay.textContent = `${points}点`;
+      }
+      if (amountDisplay) {
+        amountDisplay.textContent = `合計金額: ${formatYenAmount(totalAmount)}`;
+      }
+    }
+
+    private calculateFormationPoints(betTypeId: string, selectedPositions: number[][]): number {
+      // 各頭目で選択された馬の組み合わせ数を計算
+      if (selectedPositions.length === 0) return 0;
+
+      // 2頭買いの場合（馬連、馬単など）
+      if (selectedPositions.length === 2) {
+        const [first, second] = selectedPositions;
+        
+        if (betTypeId === 'umatan' || betTypeId === 'wakuren') {
+          // 馬単・枠連：順序あり（順列）
+          return first.length * second.length;
+        } else {
+          // 馬連・ワイド：順序なし（組み合わせ、ただし重複を除く）
+          let count = 0;
+          first.forEach(f => {
+            second.forEach(s => {
+              if (f !== s) count++;
+            });
+          });
+          return count;
+        }
+      }
+
+      // 3頭買いの場合（3連複、3連単）
+      if (selectedPositions.length === 3) {
+        const [first, second, third] = selectedPositions;
+        
+        if (betTypeId === 'sanrentan') {
+          // 3連単：順序あり（順列）
+          return first.length * second.length * third.length;
+        } else {
+          // 3連複：順序なし（組み合わせ、重複を除く）
+          let count = 0;
+          first.forEach(f => {
+            second.forEach(s => {
+              if (f !== s) {
+                third.forEach(t => {
+                  if (t !== f && t !== s) count++;
+                });
+              }
+            });
+          });
+          return count;
+        }
+      }
+
+      return 0;
+    }
+
+    private updateAllCalculations(): void {
+      this.betTypeStates.forEach((_, betTypeId) => {
+        this.calculateForBetType(betTypeId);
+      });
+    }
+  }
+
+  // コンポーネントの初期化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFormationCalculators);
+  } else {
+    initFormationCalculators();
+  }
+
+  function initFormationCalculators(): void {
+    const calculators = document.querySelectorAll('.formation-calculator');
+    calculators.forEach(calculator => {
+      new FormationCalculator(calculator as HTMLElement);
+    });
+  }
+</script>
+
+<style>
+  .formation-table {
+    min-width: 600px;
+  }
+
+  .formation-table th,
+  .formation-table td {
+    white-space: nowrap;
+  }
+
+  .formation-table tbody tr:hover {
+    background-color: #f9fafb;
+  }
+
+  .horse-checkbox:checked {
+    accent-color: #3b82f6;
+  }
+
+  .count-button:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #3b82f6;
+  }
+</style>

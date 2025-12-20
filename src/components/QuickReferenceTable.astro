@@ -1,0 +1,84 @@
+---
+/**
+ * BOX点数早見表コンポーネント
+ * BOX買いの点数早見表
+ */
+import { calculateBoxPoints, getMinimumHorseCount } from '../utils/betCalculations';
+
+const boxBetTypes = [
+  { id: 'wakuren', name: '枠連・馬連・ワイド', ids: ['wakuren', 'umaren', 'wide'] },
+  { id: 'umatan', name: '馬単' },
+  { id: 'sanrenpuku', name: '3連複' },
+  { id: 'sanrentan', name: '3連単' },
+];
+
+---
+
+<div class="quick-reference-table w-full overflow-x-auto">
+  <h3 class="text-xl font-bold text-gray-800 mb-4">BOX点数早見表</h3>
+  
+  <div class="table-container bg-white border-2 border-gray-300 rounded-lg overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-3 text-left font-bold border-r border-gray-300">頭数</th>
+          <th colspan="4" class="px-4 py-3 text-center font-bold">BOX</th>
+        </tr>
+        <tr>
+          <th class="px-4 py-2 text-left font-semibold border-r border-gray-300 bg-gray-50"></th>
+          {boxBetTypes.map((betType) => (
+            <th class="px-3 py-2 text-center font-semibold border-r border-gray-300 bg-gray-50">
+              {betType.name}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {Array.from({ length: 18 }, (_, i) => {
+          const horseCount = i + 1;
+          return (
+            <tr class={horseCount % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+              <td class="px-4 py-2 font-medium border-r border-gray-300">
+                {horseCount}頭
+              </td>
+              {/* BOX列 */}
+              {boxBetTypes.map((betType) => {
+                // 複数のIDがある場合は最初のIDを使用
+                const betTypeId = betType.ids ? betType.ids[0] : betType.id;
+                const minCount = getMinimumHorseCount(betTypeId);
+                const isValid = horseCount >= minCount;
+                const points = isValid ? calculateBoxPoints(betTypeId, horseCount) : 0;
+                
+                return (
+                  <td class="px-3 py-2 text-center border-r border-gray-300">
+                    {isValid ? (
+                      <span class="font-semibold" style="color: #333;">{points}</span>
+                    ) : (
+                      <span class="text-gray-400">-</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  .quick-reference-table table {
+    border-collapse: collapse;
+  }
+
+  .quick-reference-table th,
+  .quick-reference-table td {
+    white-space: nowrap;
+  }
+
+  .quick-reference-table tbody tr:hover {
+    background-color: #f3f4f6;
+  }
+</style>
+

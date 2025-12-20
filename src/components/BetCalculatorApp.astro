@@ -1,0 +1,70 @@
+---
+/**
+ * 競馬点数計算アプリケーションのメインコンポーネント
+ */
+import PointsTableTabs from './PointsTableTabs.astro';
+import { DEFAULT_AMOUNT } from '../utils/betCalculations';
+
+export interface Props {
+  className?: string;
+}
+
+const { className = '' } = Astro.props;
+---
+
+<div class={`bet-calculator-app ${className}`}>
+  <!-- ヘッダー -->
+  <header class="app-header text-center mb-8">
+    <h1 class="text-4xl font-bold text-gray-800 mb-2">
+      競馬点数計算機
+    </h1>
+    <p class="text-gray-600 text-lg">
+      馬券種別と頭数を選択して、自動でBOX買いの点数と合計金額を計算します
+    </p>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="app-main">
+    <!-- 点数表タブ（早見表、BOX点数表、フォーメーション） -->
+    <div class="points-table-tabs-section">
+      <PointsTableTabs 
+        className="w-full"
+        horseCount={1}
+        unitAmount={DEFAULT_AMOUNT}
+      />
+    </div>
+  </main>
+
+  <!-- フッター -->
+  <footer class="app-footer mt-12 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
+    <p>
+      ※ この計算機は参考用です。実際の馬券購入時は各競馬場の規定をご確認ください。
+    </p>
+    <p class="mt-2">
+      競馬はギャンブルです。のめりこみすぎないようにほどほどに楽しんでください
+    </p>
+  </footer>
+</div>
+
+<style>
+  .bet-calculator-app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 640px) {
+    .bet-calculator-app {
+      padding: 1rem;
+    }
+    
+    .app-header h1 {
+      font-size: 2rem;
+    }
+    
+    .app-header p {
+      font-size: 1rem;
+    }
+  }
+</style>
