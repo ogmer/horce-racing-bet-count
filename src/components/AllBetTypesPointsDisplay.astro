@@ -61,7 +61,7 @@ const betTypes = groupedBetTypes;
 ---
 
 <div class={`all-bet-types-points-display ${className}`} data-initial-amount={unitAmount}>
-  <h3 class="text-2xl font-bold text-gray-800 mb-4">BOX点数表</h3>
+  <h2 class="text-2xl font-bold text-gray-800 mb-4">BOX点数表</h2>
   
   <!-- 頭数選択 -->
   <div class="horse-count-selection mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
@@ -164,7 +164,7 @@ const betTypes = groupedBetTypes;
   ) : null}
   
   <!-- 1点当たりの金額選択 -->
-  <div class="amount-selection mt-6 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+  <div class="amount-selection mt-6 p-4 bg-white border-2 border-gray-200 rounded-lg">
     <label class="block text-base font-semibold text-gray-700 mb-3">
       1点当たりの金額を選択
     </label>
@@ -299,7 +299,13 @@ const betTypes = groupedBetTypes;
       // 頭数入力
       if (this.countInput) {
         this.countInput.addEventListener('input', () => {
-          const count = parseInt(this.countInput?.value || '1') || 1;
+          const rawValue = this.countInput?.value || '1';
+          // 数値のみを許可（XSS対策）
+          const sanitizedValue = rawValue.replace(/[^0-9]/g, '');
+          if (sanitizedValue !== rawValue && this.countInput) {
+            this.countInput.value = sanitizedValue;
+          }
+          const count = parseInt(sanitizedValue) || 1;
           this.setHorseCount(count);
         });
       }
@@ -337,17 +343,33 @@ const betTypes = groupedBetTypes;
       if (this.customInput) {
         this.customInput.addEventListener('input', (event) => {
           const target = event.target as HTMLInputElement;
-          this.handleCustomInput(target.value);
+          // 数値のみを許可（XSS対策）
+          const sanitizedValue = target.value.replace(/[^0-9]/g, '');
+          if (sanitizedValue !== target.value) {
+            target.value = sanitizedValue;
+          }
+          this.handleCustomInput(sanitizedValue);
         });
 
         this.customInput.addEventListener('blur', () => {
           this.validateAndApplyCustomAmount();
         });
 
-        // 数字のみ入力を許可
+        // 数字のみ入力を許可（XSS対策）
         this.customInput.addEventListener('keypress', (event) => {
-          if (!/[\d]/.test(event.key) && !['Backspace', 'Delete', 'Tab', 'Enter'].includes(event.key)) {
+          if (!/[\d]/.test(event.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
             event.preventDefault();
+          }
+        });
+
+        // ペースト時のサニタイズ
+        this.customInput.addEventListener('paste', (event) => {
+          event.preventDefault();
+          const paste = (event.clipboardData || (window as any).clipboardData).getData('text');
+          const sanitized = paste.replace(/[^0-9]/g, '');
+          if (this.customInput) {
+            this.customInput.value = sanitized;
+            this.handleCustomInput(sanitized);
           }
         });
       }
@@ -601,36 +623,49 @@ const betTypes = groupedBetTypes;
             }`;
             card.setAttribute('data-bet-type-id', betType.id);
 
+            // XSS対策: エスケープ処理
+            const escapeHtml = (str: string | number): string => {
+              const text = String(str);
+              const map: { [key: string]: string } = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+              };
+              return text.replace(/[&<>"']/g, (m) => map[m]);
+            };
+
             const descriptionHtml = betType.description 
-              ? betType.description.split('\n').map(line => `<div class="mb-1">${line}</div>`).join('')
+              ? betType.description.split('\n').map(line => `<div class="mb-1">${escapeHtml(line)}</div>`).join('')
               : '';
 
             card.innerHTML = `
               <div class="flex-1">
                 <div class="bet-type-name text-lg font-bold text-gray-800 mb-2">
-                  ${betType.displayName}
+                  ${escapeHtml(betType.displayName)}
                 </div>
                 ${isValid ? `
                   <div class="points-amount-row flex items-end justify-between mb-2">
                     <div class="points-display">
                       <div class="text-sm text-gray-600">点数</div>
-                      <div class="text-2xl font-bold text-blue-600">${points}点</div>
+                      <div class="text-2xl font-bold text-blue-600">${escapeHtml(points)}点</div>
                     </div>
                     <div class="amount-display text-right">
                       <div class="text-xs text-gray-600 mb-1">合計金額</div>
                       <div class="text-lg font-semibold text-green-600">
-                        ${formatYenAmount(totalAmount)}
+                        ${escapeHtml(formatYenAmount(totalAmount))}
                       </div>
                     </div>
                   </div>
                   <div class="calculation-display mb-2">
                     <div class="text-xs text-gray-500">
-                      ${this.horseCount}頭のBOX買い
+                      ${escapeHtml(this.horseCount)}頭のBOX買い
                     </div>
                   </div>
                 ` : `
                   <div class="invalid-message text-sm text-gray-500">
-                    最小${minCount}頭以上必要
+                    最小${escapeHtml(minCount)}頭以上必要
                   </div>
                 `}
               </div>

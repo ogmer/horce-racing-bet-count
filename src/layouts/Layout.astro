@@ -7,11 +7,57 @@ import '../styles/global.css';
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="description" content="競馬のBOX買いの点数と合計金額を自動計算するツール" />
+		<meta name="description" content="競馬のBOX買いの点数と合計金額を自動計算するツール。単勝、複勝、馬連、馬単、ワイド、3連複、3連単の点数を簡単に計算できます。" />
+		<meta name="keywords" content="競馬,点数計算,BOX買い,馬券,計算機,競馬予想" />
+		<meta name="author" content="競馬点数計算機" />
+		<meta name="robots" content="index, follow" />
+		<link rel="canonical" href={Astro.url.href} />
+		
+		<!-- Open Graph / Facebook -->
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="競馬点数計算機 - 馬券の点数と合計金額を自動計算" />
+		<meta property="og:description" content="競馬のBOX買いの点数と合計金額を自動計算するツール。単勝、複勝、馬連、馬単、ワイド、3連複、3連単の点数を簡単に計算できます。" />
+		<meta property="og:url" content={Astro.url.href} />
+		<meta property="og:locale" content="ja_JP" />
+		
+		<!-- Twitter -->
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:title" content="競馬点数計算機 - 馬券の点数と合計金額を自動計算" />
+		<meta name="twitter:description" content="競馬のBOX買いの点数と合計金額を自動計算するツール" />
+		
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="apple-touch-icon" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>競馬点数計算機 - 馬券の点数と合計金額を自動計算</title>
+		
+		<!-- セキュリティヘッダー -->
+		<meta http-equiv="X-Content-Type-Options" content="nosniff" />
+		<meta http-equiv="X-Frame-Options" content="DENY" />
+		<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+		<meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), payment=()" />
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;" />
+		
+		<!-- 構造化データ (JSON-LD) -->
+		<script type="application/ld+json" set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "WebApplication",
+			"name": "競馬点数計算機",
+			"description": "競馬のBOX買いの点数と合計金額を自動計算するツール。単勝、複勝、馬連、馬単、ワイド、3連複、3連単の点数を簡単に計算できます。",
+			"url": Astro.url.href,
+			"applicationCategory": "UtilityApplication",
+			"operatingSystem": "Web",
+			"offers": {
+				"@type": "Offer",
+				"price": "0",
+				"priceCurrency": "JPY"
+			},
+			"featureList": [
+				"BOX買いの点数計算",
+				"早見表表示",
+				"フォーメーション計算",
+				"合計金額の自動計算"
+			]
+		})} />
 	</head>
 	<body>
 		<slot />

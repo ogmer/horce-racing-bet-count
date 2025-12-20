@@ -18,21 +18,21 @@ const { className = '' } = Astro.props;
     <h1 class="text-4xl font-bold text-gray-800 mb-2">
       競馬点数計算機
     </h1>
-    <p class="text-gray-600 text-lg">
+    <p class="text-gray-600 text-lg" role="doc-subtitle">
       馬券種別と頭数を選択して、自動でBOX買いの点数と合計金額を計算します
     </p>
   </header>
 
   <!-- メインコンテンツ -->
-  <main class="app-main">
+  <main class="app-main" role="main">
     <!-- 点数表タブ（早見表、BOX点数表、フォーメーション） -->
-    <div class="points-table-tabs-section">
+    <section class="points-table-tabs-section" aria-label="点数計算ツール">
       <PointsTableTabs 
         className="w-full"
         horseCount={1}
         unitAmount={DEFAULT_AMOUNT}
       />
-    </div>
+    </section>
   </main>
 
   <!-- フッター -->

@@ -23,11 +23,14 @@ const {
 
 <div class={`points-table-tabs ${className}`}>
   <!-- タブヘッダー -->
-  <div class="tabs-header mb-6">
+  <nav class="tabs-header mb-6" role="tablist" aria-label="計算ツールの切り替え">
     <div class="flex border-b border-gray-200">
       <button
         type="button"
         id="tab-quick-reference"
+        role="tab"
+        aria-controls="content-quick-reference"
+        aria-selected="true"
         class="tab-button active px-6 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-600 transition-all duration-200"
       >
         早見表
@@ -35,6 +38,9 @@ const {
       <button
         type="button"
         id="tab-box-points"
+        role="tab"
+        aria-controls="content-box-points"
+        aria-selected="false"
         class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-all duration-200"
       >
         BOX点数表
@@ -42,22 +48,25 @@ const {
       <button
         type="button"
         id="tab-formation"
+        role="tab"
+        aria-controls="content-formation"
+        aria-selected="false"
         class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-all duration-200"
       >
         フォーメーション
       </button>
     </div>
-  </div>
+  </nav>
 
   <!-- タブコンテンツ -->
   <div class="tabs-content">
     <!-- 早見表タブ -->
-    <div id="content-quick-reference" class="tab-content">
+    <div id="content-quick-reference" class="tab-content" role="tabpanel" aria-labelledby="tab-quick-reference">
       <QuickReferenceTable />
     </div>
 
     <!-- BOX点数表タブ -->
-    <div id="content-box-points" class="tab-content hidden">
+    <div id="content-box-points" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-box-points">
       <AllBetTypesPointsDisplay 
         className="w-full"
         horseCount={horseCount}
@@ -66,7 +75,7 @@ const {
     </div>
 
     <!-- フォーメーションタブ -->
-    <div id="content-formation" class="tab-content hidden">
+    <div id="content-formation" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-formation">
       <FormationCalculator 
         className="w-full"
         unitAmount={unitAmount}
@@ -118,9 +127,10 @@ const {
 
     private switchTab(index: number): void {
       // すべてのタブボタンのアクティブ状態を解除
-      this.tabButtons.forEach(btn => {
+      this.tabButtons.forEach((btn, i) => {
         btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
         btn.classList.add('border-transparent', 'text-gray-500');
+        btn.setAttribute('aria-selected', 'false');
       });
 
       // すべてのタブコンテンツを非表示
@@ -135,6 +145,7 @@ const {
       if (selectedButton && selectedContent) {
         selectedButton.classList.add('active', 'border-blue-500', 'text-blue-600');
         selectedButton.classList.remove('border-transparent', 'text-gray-500');
+        selectedButton.setAttribute('aria-selected', 'true');
         selectedContent.classList.remove('hidden');
       }
     }
