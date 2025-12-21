@@ -236,6 +236,12 @@ const betTypes = groupedBetTypes;
     validateCustomAmount,
     DEFAULT_AMOUNT
   } from '../utils/betCalculations';
+  import { 
+    getHistory, 
+    saveHistory, 
+    generateHistoryId,
+    type CalculationHistory
+  } from '../utils/historyStorage';
 
   class AllBetTypesPointsDisplay {
     private container: HTMLElement;
