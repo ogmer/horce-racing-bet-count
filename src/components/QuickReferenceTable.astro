@@ -21,11 +21,10 @@ const boxBetTypes = [
     <table class="w-full text-sm" role="table" aria-label="BOX点数早見表">
       <thead class="bg-gray-100">
         <tr>
-          <th class="px-4 py-3 text-left font-bold border-r border-gray-300">頭数</th>
+          <th rowspan="2" class="px-4 py-3 text-center font-bold border-r border-gray-300">頭数</th>
           <th colspan="4" class="px-4 py-3 text-center font-bold">BOX</th>
         </tr>
         <tr>
-          <th class="px-4 py-2 text-left font-semibold border-r border-gray-300 bg-gray-50"></th>
           {boxBetTypes.map((betType) => (
             <th class="px-3 py-2 text-center font-semibold border-r border-gray-300 bg-gray-50">
               {betType.name}
@@ -38,7 +37,7 @@ const boxBetTypes = [
           const horseCount = i + 1;
           return (
             <tr class={horseCount % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-              <td class="px-4 py-2 font-medium border-r border-gray-300">
+              <td class="px-4 py-2 font-medium text-center border-r border-gray-300">
                 {horseCount}頭
               </td>
               {/* BOX列 */}

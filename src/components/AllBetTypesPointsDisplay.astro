@@ -23,7 +23,6 @@ const allBetTypes = getAllBetTypes();
 // 1行目: 単勝、複勝、馬単
 // 2行目: 枠連・馬連・ワイド、3連複、3連単
 const groupedBetTypes = [];
-const groupedIds = ['wakuren', 'umaren', 'wide'];
 const groupedBetType = allBetTypes.find(bt => bt.id === 'wakuren');
 
 // 1行目の買い目: 単勝、複勝、馬単
@@ -73,7 +72,7 @@ const betTypes = groupedBetTypes;
       <button
         type="button"
         id="box-decrease-count"
-        class="count-button bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+        class="count-button bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 flex items-center justify-center"
         title="頭数を減らす"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,7 +92,7 @@ const betTypes = groupedBetTypes;
       <button
         type="button"
         id="box-increase-count"
-        class="count-button bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+        class="count-button bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 flex items-center justify-center"
         title="頭数を増やす"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,8 +174,8 @@ const betTypes = groupedBetTypes;
         const points = isValid ? calculateBoxPoints(betType.id, horseCount) : 0;
         const totalAmount = points * unitAmount;
         const cardClass = isValid 
-          ? 'bet-type-point-card p-4 rounded-lg border-2 transition-all duration-200 bg-white border-blue-200 hover:border-blue-400 hover:shadow-md'
-          : 'bet-type-point-card p-4 rounded-lg border-2 transition-all duration-200 bg-gray-100 border-gray-200 opacity-60';
+          ? 'bet-type-point-card p-4 rounded-lg border-2 bg-white border-blue-200'
+          : 'bet-type-point-card p-4 rounded-lg border-2 bg-gray-100 border-gray-200 opacity-60';
         
         return (
           <div class={`${cardClass} relative flex flex-col`} data-bet-type-id={betType.id}>
@@ -254,6 +253,7 @@ const betTypes = groupedBetTypes;
     private customAmount: string = '';
     private validationError: string | null = null;
     private isUsingCustomAmount: boolean = false;
+
 
     constructor(container: HTMLElement) {
       this.container = container;
@@ -680,7 +680,6 @@ const betTypes = groupedBetTypes;
       // 1行目: 単勝、複勝、馬単
       // 2行目: 枠連・馬連・ワイド、3連複、3連単
       const groupedBetTypes = [];
-      const groupedIds = ['wakuren', 'umaren', 'wide'];
       const groupedBetType = allBetTypes.find(bt => bt.id === 'wakuren');
       
       // 1行目の買い目: 単勝、複勝、馬単
@@ -732,9 +731,9 @@ const betTypes = groupedBetTypes;
             const totalAmount = points * this.unitAmount;
 
             const card = document.createElement('div');
-            card.className = `bet-type-point-card relative flex flex-col p-4 rounded-lg border-2 transition-all duration-200 ${
+            card.className = `bet-type-point-card relative flex flex-col p-4 rounded-lg border-2 ${
               isValid 
-                ? 'bg-white border-blue-200 hover:border-blue-400 hover:shadow-md' 
+                ? 'bg-white border-blue-200' 
                 : 'bg-gray-100 border-gray-200 opacity-60'
             }`;
             card.setAttribute('data-bet-type-id', betType.id);
@@ -826,15 +825,10 @@ const betTypes = groupedBetTypes;
   }
   
   .bet-type-point-card {
-    transition: transform 0.2s ease-in-out;
     height: 100%;
     display: flex;
     flex-direction: column;
     min-height: 200px;
-  }
-
-  .bet-type-point-card:hover {
-    transform: translateY(-2px);
   }
   
   .bet-type-point-card > .flex-1 {
@@ -851,6 +845,17 @@ const betTypes = groupedBetTypes;
   
   .points-amount-row {
     min-height: 60px;
+  }
+
+  /* ボタンと入力フィールドの中央揃え */
+  .count-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .count-input {
+    text-align: center;
   }
   
   /* レスポンシブ対応 */
@@ -882,11 +887,15 @@ const betTypes = groupedBetTypes;
       min-width: 44px;
       min-height: 44px;
       padding: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .count-input {
       width: 4rem;
       font-size: 1rem;
+      text-align: center;
     }
 
     .preset-button {
@@ -953,17 +962,6 @@ const betTypes = groupedBetTypes;
   }
 
   /* 金額選択のスタイル */
-  .preset-button:hover {
-    transform: translateY(-1px);
-  }
-
-  .preset-button.selected {
-    transform: translateY(-2px);
-  }
-
-  .preset-button:active {
-    transform: translateY(0);
-  }
 
   .custom-input:focus {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);

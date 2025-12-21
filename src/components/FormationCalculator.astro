@@ -349,18 +349,54 @@ const frameColors = [
       }
     }
 
+    /**
+     * 馬番から枠番を取得する
+     * 1-2: 1枠, 3-4: 2枠, 5-6: 3枠, 7-8: 4枠, 9-10: 5枠, 11-12: 6枠, 13-15: 7枠, 16-18: 8枠
+     */
+    private getFrameNumber(horseNum: number): number {
+      if (horseNum <= 2) return 1;
+      if (horseNum <= 4) return 2;
+      if (horseNum <= 6) return 3;
+      if (horseNum <= 8) return 4;
+      if (horseNum <= 10) return 5;
+      if (horseNum <= 12) return 6;
+      if (horseNum <= 15) return 7;
+      return 8;
+    }
+
+    /**
+     * 馬番の配列から枠番のセットを取得する（重複を除く）
+     */
+    private getFrameSet(horseNums: number[]): Set<number> {
+      const frameSet = new Set<number>();
+      horseNums.forEach(horseNum => {
+        frameSet.add(this.getFrameNumber(horseNum));
+      });
+      return frameSet;
+    }
+
     private calculateFormationPoints(betTypeId: string, selectedPositions: number[][]): number {
       if (selectedPositions.length === 0) return 0;
 
-      // 2頭買いの場合（馬連、馬単など）
+      // 2頭買いの場合（馬連、馬単、枠連、ワイド）
       if (selectedPositions.length === 2) {
         const [first, second] = selectedPositions;
         
-        if (betTypeId === 'umatan' || betTypeId === 'wakuren') {
-          // 馬単・枠連：順序あり（順列）
-          return first.length * second.length;
-        } else {
-          // 馬連・ワイド：順序なし（組み合わせ、ただし重複を除く）
+        // 枠連・馬連・ワイドは同じ点数（順序なしの組み合わせ）
+        if (betTypeId === 'wakuren' || betTypeId === 'umaren' || betTypeId === 'wide') {
+          // 1着と2着の組み合わせで、同じ馬は除く（順序なし）
+          // 全頭選択時（18頭×18頭）でも、実際には18C2=153になる必要がある
+          let count = 0;
+          first.forEach(f => {
+            second.forEach(s => {
+              if (f !== s) count++;
+            });
+          });
+          return count;
+        } else if (betTypeId === 'umatan') {
+          // 馬単：順序あり（順列）
+          // 1着の選択数 × 2着の選択数（同じ馬は選べない）
+          // 全頭選択時（18頭×18頭）でも、実際には18×17=306になる必要がある
           let count = 0;
           first.forEach(f => {
             second.forEach(s => {
@@ -377,9 +413,23 @@ const frameColors = [
         
         if (betTypeId === 'sanrentan') {
           // 3連単：順序あり（順列）
-          return first.length * second.length * third.length;
-        } else {
+          // 1着の選択数 × 2着の選択数 × 3着の選択数（同じ馬は選べない）
+          // 全頭選択時（18頭×18頭×18頭）でも、実際には18×17×16=4896になる必要がある
+          let count = 0;
+          first.forEach(f => {
+            second.forEach(s => {
+              if (f !== s) {
+                third.forEach(t => {
+                  if (t !== f && t !== s) count++;
+                });
+              }
+            });
+          });
+          return count;
+        } else if (betTypeId === 'sanrenpuku') {
           // 3連複：順序なし（組み合わせ、重複を除く）
+          // 1着・2着・3着の組み合わせで、同じ馬は除く
+          // 全頭選択時（18頭×18頭×18頭）でも、実際には18C3=816になる必要がある
           let count = 0;
           first.forEach(f => {
             second.forEach(s => {

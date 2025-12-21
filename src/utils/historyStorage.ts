@@ -79,55 +79,9 @@ export function saveHistory(history: CalculationHistory): void {
 }
 
 /**
- * 履歴を削除する
- */
-export function deleteHistory(id: string): void {
-  try {
-    const allHistory = getHistory();
-    const filtered = allHistory.filter(item => item.id !== id);
-    
-    const serialized = filtered.map(item => {
-      const serializedItem: any = { ...item };
-      if (item.selections instanceof Map) {
-        serializedItem.selections = Array.from(item.selections.entries());
-      }
-      return serializedItem;
-    });
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
-  } catch (error) {
-    console.error('履歴の削除に失敗しました:', error);
-  }
-}
-
-/**
- * すべての履歴を削除する
- */
-export function clearAllHistory(): void {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.error('履歴の全削除に失敗しました:', error);
-  }
-}
-
-/**
  * 履歴IDを生成する
  */
 export function generateHistoryId(): string {
   return `calc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * 日時をフォーマットする
- */
-export function formatHistoryDate(timestamp: number): string {
-  const date = new Date(timestamp);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}/${month}/${day} ${hours}:${minutes}`;
 }
 
