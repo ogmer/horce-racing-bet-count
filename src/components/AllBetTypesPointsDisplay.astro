@@ -297,10 +297,10 @@ const betTypes = groupedBetTypes;
       this.setupAmountListeners();
       this.setupKeyboardShortcuts();
 
-      // キャッシュから復元
+      // キャッシュから復元（DOM要素が準備できた後）
       this.restoreFromCache();
 
-      // 初期表示
+      // 初期表示（復元後に更新）
       this.updateAmountUI();
       this.updateDisplay();
     }
@@ -566,46 +566,85 @@ const betTypes = groupedBetTypes;
         unitAmount: this.unitAmount
       };
 
-      saveHistory(history);
+      try {
+        saveHistory(history);
+        console.log('[BOX点数表] 履歴を保存:', history);
+      } catch (error) {
+        console.error('[BOX点数表] 履歴の保存に失敗:', error);
+      }
     }
 
     private restoreFromCache(): void {
-      const history = getHistory();
-      if (history.length === 0) return;
-
-      // 最新のBOX買いの履歴を取得
-      const boxHistory = history.find(h => h.type === 'box');
-      if (!boxHistory) return;
-
-      // 頭数を復元
-      if (boxHistory.horseCount && boxHistory.horseCount >= 1 && boxHistory.horseCount <= 18) {
-        this.horseCount = boxHistory.horseCount;
-        if (this.countInput) {
-          this.countInput.value = boxHistory.horseCount.toString();
+      try {
+        const history = getHistory();
+        if (history.length === 0) {
+          console.log('[BOX点数表] 履歴がありません');
+          return;
         }
-      }
 
-      // 金額を復元
-      if (boxHistory.unitAmount && boxHistory.unitAmount > 0) {
-        this.unitAmount = boxHistory.unitAmount;
-        
-        // プリセット金額かチェック
-        const presetAmounts = getPresetAmounts();
-        const isPreset = presetAmounts.includes(boxHistory.unitAmount as any);
-        
-        if (isPreset) {
-          this.isUsingCustomAmount = false;
-          this.customAmount = '';
-          if (this.customInput) {
-            this.customInput.value = '';
-          }
-        } else {
-          this.isUsingCustomAmount = true;
-          this.customAmount = boxHistory.unitAmount.toString();
-          if (this.customInput) {
-            this.customInput.value = boxHistory.unitAmount.toString();
-          }
+        // 最新のBOX買いの履歴を取得
+        const boxHistory = history.find(h => h.type === 'box');
+        if (!boxHistory) {
+          console.log('[BOX点数表] BOX買いの履歴がありません');
+          return;
         }
+
+        console.log('[BOX点数表] 履歴を復元:', boxHistory);
+
+        // 頭数を復元
+        if (boxHistory.horseCount && boxHistory.horseCount >= 1 && boxHistory.horseCount <= 18) {
+          this.horseCount = boxHistory.horseCount;
+          if (this.countInput) {
+            this.countInput.value = boxHistory.horseCount.toString();
+          }
+          console.log('[BOX点数表] 頭数を復元:', this.horseCount);
+        }
+
+        // 金額を復元
+        if (boxHistory.unitAmount && boxHistory.unitAmount > 0) {
+          this.unitAmount = boxHistory.unitAmount;
+          
+          // プリセット金額かチェック
+          const presetAmounts = getPresetAmounts();
+          const isPreset = presetAmounts.includes(boxHistory.unitAmount as any);
+          
+          if (isPreset) {
+            this.isUsingCustomAmount = false;
+            this.customAmount = '';
+            if (this.customInput) {
+              this.customInput.value = '';
+            }
+            // プリセットボタンを更新
+            if (this.presetButtons) {
+              this.presetButtons.forEach(button => {
+                const amount = parseInt(button.dataset.presetAmount || '0', 10);
+                if (amount === boxHistory.unitAmount) {
+                  button.classList.add('bg-blue-400', 'border-blue-500', 'text-white');
+                  button.classList.remove('bg-white', 'border-gray-300', 'text-gray-700');
+                } else {
+                  button.classList.remove('bg-blue-400', 'border-blue-500', 'text-white');
+                  button.classList.add('bg-white', 'border-gray-300', 'text-gray-700');
+                }
+              });
+            }
+          } else {
+            this.isUsingCustomAmount = true;
+            this.customAmount = boxHistory.unitAmount.toString();
+            if (this.customInput) {
+              this.customInput.value = boxHistory.unitAmount.toString();
+            }
+            // プリセットボタンをクリア
+            if (this.presetButtons) {
+              this.presetButtons.forEach(button => {
+                button.classList.remove('bg-blue-400', 'border-blue-500', 'text-white');
+                button.classList.add('bg-white', 'border-gray-300', 'text-gray-700');
+              });
+            }
+          }
+          console.log('[BOX点数表] 金額を復元:', this.unitAmount);
+        }
+      } catch (error) {
+        console.error('[BOX点数表] 履歴の復元に失敗:', error);
       }
     }
 

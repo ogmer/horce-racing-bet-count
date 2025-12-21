@@ -528,41 +528,62 @@ const frameColors = [
         selections: this.selections
       };
 
-      saveHistory(history);
+      try {
+        saveHistory(history);
+        console.log('[フォーメーション] 履歴を保存:', history);
+      } catch (error) {
+        console.error('[フォーメーション] 履歴の保存に失敗:', error);
+      }
     }
 
     private restoreFromCache(): void {
-      const history = getHistory();
-      if (history.length === 0) return;
+      try {
+        const history = getHistory();
+        if (history.length === 0) {
+          console.log('[フォーメーション] 履歴がありません');
+          return;
+        }
 
-      // 最新のフォーメーションの履歴を取得
-      const formationHistory = history.find(h => h.type === 'formation');
-      if (!formationHistory || !formationHistory.selections) return;
+        // 最新のフォーメーションの履歴を取得
+        const formationHistory = history.find(h => h.type === 'formation');
+        if (!formationHistory || !formationHistory.selections) {
+          console.log('[フォーメーション] フォーメーションの履歴がありません');
+          return;
+        }
 
-      // Mapを復元（配列の場合はMapに変換）
-      let selectionsMap: Map<number, number[]>;
-      if (Array.isArray(formationHistory.selections)) {
-        selectionsMap = new Map(formationHistory.selections);
-      } else if (formationHistory.selections instanceof Map) {
-        selectionsMap = formationHistory.selections;
-      } else {
-        return;
+        console.log('[フォーメーション] 履歴を復元:', formationHistory);
+
+        // Mapを復元（配列の場合はMapに変換）
+        let selectionsMap: Map<number, number[]>;
+        if (Array.isArray(formationHistory.selections)) {
+          selectionsMap = new Map(formationHistory.selections);
+        } else if (formationHistory.selections instanceof Map) {
+          selectionsMap = formationHistory.selections;
+        } else {
+          console.log('[フォーメーション] 選択データの形式が不正です');
+          return;
+        }
+
+        // 選択を復元
+        this.selections.clear();
+        selectionsMap.forEach((horses, position) => {
+          this.selections.set(position, new Set(horses));
+        });
+
+        // 金額を復元
+        if (formationHistory.unitAmount && formationHistory.unitAmount > 0) {
+          this.unitAmount = formationHistory.unitAmount;
+          console.log('[フォーメーション] 金額を復元:', this.unitAmount);
+        }
+
+        console.log('[フォーメーション] 選択を復元:', Array.from(this.selections.entries()));
+
+        // UIを更新
+        this.updateCheckboxes();
+        this.updateAllCalculations();
+      } catch (error) {
+        console.error('[フォーメーション] 履歴の復元に失敗:', error);
       }
-
-      // 選択を復元
-      this.selections.clear();
-      selectionsMap.forEach((horses, position) => {
-        this.selections.set(position, new Set(horses));
-      });
-
-      // 金額を復元
-      if (formationHistory.unitAmount && formationHistory.unitAmount > 0) {
-        this.unitAmount = formationHistory.unitAmount;
-      }
-
-      // UIを更新
-      this.updateCheckboxes();
-      this.updateAllCalculations();
     }
   }
 
