@@ -64,7 +64,7 @@ const betTypes = groupedBetTypes;
   <h2 class="text-2xl font-bold text-gray-800 mb-4">BOX点数表</h2>
   
   <!-- 頭数選択 -->
-  <div class="horse-count-selection mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+  <div class="horse-count-selection mb-6 p-4 bg-white border-2 border-gray-200 rounded-lg">
     <label for="box-horse-count-input" class="block text-base font-semibold text-gray-700 mb-3">
       BOX買いの頭数を選択
     </label>
@@ -103,68 +103,8 @@ const betTypes = groupedBetTypes;
     </div>
   </div>
   
-  {horseCount > 0 ? (
-    <div class="points-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {betTypes.map((betType) => {
-        const minCount = getMinimumHorseCount(betType.id);
-        const maxCount = 18;
-        const isValid = horseCount >= minCount && horseCount < maxCount + 1;
-        const points = isValid ? calculateBoxPoints(betType.id, horseCount) : 0;
-        const totalAmount = points * unitAmount;
-        const cardClass = isValid 
-          ? 'bet-type-point-card p-4 rounded-lg border-2 transition-all duration-200 bg-white border-blue-200 hover:border-blue-400 hover:shadow-md'
-          : 'bet-type-point-card p-4 rounded-lg border-2 transition-all duration-200 bg-gray-100 border-gray-200 opacity-60';
-        
-        return (
-          <div class={`${cardClass} relative flex flex-col`} data-bet-type-id={betType.id}>
-            <div class="flex-1">
-              <div class="bet-type-name text-lg font-bold text-gray-800 mb-2">
-                {betType.displayName}
-              </div>
-              
-              {isValid ? (
-                <div>
-                  <div class="points-amount-row flex items-end justify-between mb-2">
-                    <div class="points-display">
-                      <div class="text-sm text-gray-600">点数</div>
-                      <div class="text-2xl font-bold text-blue-600">{points}点</div>
-                    </div>
-                    <div class="amount-display text-right">
-                      <div class="text-xs text-gray-600 mb-1">合計金額</div>
-                      <div class="text-lg font-semibold text-green-600">
-                        {formatYenAmount(totalAmount)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="calculation-display mb-2">
-                    <div class="text-xs text-gray-500">
-                      {horseCount}頭のBOX買い
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div class="invalid-message text-sm text-gray-500">
-                  最小{minCount}頭以上必要
-                </div>
-              )}
-            </div>
-            
-            {betType.description && (
-              <div class="bet-type-description mt-2 pt-2 border-t border-gray-200 text-xs text-blue-600 leading-relaxed">
-                {betType.description.split('\n').map((line, index) => (
-                  <div key={index} class="mb-1">{line}</div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  ) : null}
-  
   <!-- 1点当たりの金額選択 -->
-  <div class="amount-selection mt-6 p-4 bg-white border-2 border-gray-200 rounded-lg">
+  <div class="amount-selection mb-6 p-4 bg-white border-2 border-gray-200 rounded-lg">
     <label class="block text-base font-semibold text-gray-700 mb-3">
       1点当たりの金額を選択
     </label>
@@ -179,9 +119,9 @@ const betTypes = groupedBetTypes;
             data-preset-amount={amount}
             class={`preset-button ${
               unitAmount === amount
-                ? 'selected bg-green-500 text-white border-green-600 shadow-lg' 
-                : 'unselected bg-white text-gray-700 border-gray-300 hover:bg-green-50 hover:border-green-300'
-            } border-2 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2`}
+                ? 'selected bg-blue-400 text-white border-blue-500 shadow-lg' 
+                : 'unselected bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:border-blue-300'
+            } border-2 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
             aria-pressed={unitAmount === amount}
           >
             {formatYenAmount(amount)}
@@ -225,6 +165,66 @@ const betTypes = groupedBetTypes;
       </div>
     </div>
   </div>
+  
+  {horseCount > 0 ? (
+    <div class="points-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {betTypes.map((betType) => {
+        const minCount = getMinimumHorseCount(betType.id);
+        const maxCount = 18;
+        const isValid = horseCount >= minCount && horseCount < maxCount + 1;
+        const points = isValid ? calculateBoxPoints(betType.id, horseCount) : 0;
+        const totalAmount = points * unitAmount;
+        const cardClass = isValid 
+          ? 'bet-type-point-card p-4 rounded-lg border-2 transition-all duration-200 bg-white border-blue-200 hover:border-blue-400 hover:shadow-md'
+          : 'bet-type-point-card p-4 rounded-lg border-2 transition-all duration-200 bg-gray-100 border-gray-200 opacity-60';
+        
+        return (
+          <div class={`${cardClass} relative flex flex-col`} data-bet-type-id={betType.id}>
+            <div class="flex-1">
+              <div class="bet-type-name text-lg font-bold text-gray-800 mb-2">
+                {betType.displayName}
+              </div>
+              
+              {isValid ? (
+                <div>
+                  <div class="points-amount-row flex items-end justify-between mb-2">
+                    <div class="points-display">
+                      <div class="text-sm text-gray-600">点数</div>
+                      <div class="text-2xl font-bold text-blue-600">{points}点</div>
+                    </div>
+                    <div class="amount-display text-right pr-2">
+                      <div class="text-xs text-gray-600 mb-1">合計金額</div>
+                      <div class="text-lg font-semibold text-green-600">
+                        {formatYenAmount(totalAmount)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="calculation-display mb-2">
+                    <div class="text-xs text-gray-500">
+                      {horseCount}頭のBOX買い
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div class="invalid-message text-sm text-gray-500">
+                  最小{minCount}頭以上必要
+                </div>
+              )}
+            </div>
+            
+            {betType.description && (
+              <div class="bet-type-description mt-2 pt-2 border-t border-gray-200 text-xs text-blue-600 leading-relaxed">
+                {betType.description.split('\n').map((line, index) => (
+                  <div key={index} class="mb-1">{line}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  ) : null}
 </div>
 
 <script>
@@ -289,6 +289,10 @@ const betTypes = groupedBetTypes;
       // イベントリスナーを設定
       this.setupHorseCountListeners();
       this.setupAmountListeners();
+      this.setupKeyboardShortcuts();
+
+      // キャッシュから復元
+      this.restoreFromCache();
 
       // 初期表示
       this.updateAmountUI();
@@ -458,7 +462,7 @@ const betTypes = groupedBetTypes;
     private clearPresetSelection(): void {
       if (this.presetButtons) {
         this.presetButtons.forEach(button => {
-          button.classList.remove('selected', 'bg-green-500', 'text-white', 'border-green-600', 'shadow-lg');
+          button.classList.remove('selected', 'bg-blue-400', 'text-white', 'border-blue-500', 'shadow-lg');
           button.classList.add('unselected', 'bg-white', 'text-gray-700', 'border-gray-300');
           button.setAttribute('aria-pressed', 'false');
         });
@@ -472,10 +476,10 @@ const betTypes = groupedBetTypes;
           const amount = parseInt(button.dataset.presetAmount || '0', 10);
           if (amount === this.unitAmount) {
             button.classList.remove('unselected', 'bg-white', 'text-gray-700', 'border-gray-300');
-            button.classList.add('selected', 'bg-green-500', 'text-white', 'border-green-600', 'shadow-lg');
+            button.classList.add('selected', 'bg-blue-400', 'text-white', 'border-blue-500', 'shadow-lg');
             button.setAttribute('aria-pressed', 'true');
           } else {
-            button.classList.remove('selected', 'bg-green-500', 'text-white', 'border-green-600', 'shadow-lg');
+            button.classList.remove('selected', 'bg-blue-400', 'text-white', 'border-blue-500', 'shadow-lg');
             button.classList.add('unselected', 'bg-white', 'text-gray-700', 'border-gray-300');
             button.setAttribute('aria-pressed', 'false');
           }
@@ -529,6 +533,115 @@ const betTypes = groupedBetTypes;
         bubbles: true
       });
       this.container.dispatchEvent(event);
+
+      // 履歴を保存（デバウンス）
+      this.saveToHistoryDebounced();
+    }
+
+    private historySaveTimeout: number | null = null;
+
+    private saveToHistoryDebounced(): void {
+      if (this.historySaveTimeout !== null) {
+        clearTimeout(this.historySaveTimeout);
+      }
+      this.historySaveTimeout = window.setTimeout(() => {
+        this.saveToHistory();
+      }, 2000); // 2秒後に保存
+    }
+
+    private saveToHistory(): void {
+      if (this.horseCount < 1) return;
+
+      const history: CalculationHistory = {
+        id: generateHistoryId(),
+        type: 'box',
+        timestamp: Date.now(),
+        horseCount: this.horseCount,
+        unitAmount: this.unitAmount
+      };
+
+      saveHistory(history);
+    }
+
+    private restoreFromCache(): void {
+      const history = getHistory();
+      if (history.length === 0) return;
+
+      // 最新のBOX買いの履歴を取得
+      const boxHistory = history.find(h => h.type === 'box');
+      if (!boxHistory) return;
+
+      // 頭数を復元
+      if (boxHistory.horseCount && boxHistory.horseCount >= 1 && boxHistory.horseCount <= 18) {
+        this.horseCount = boxHistory.horseCount;
+        if (this.countInput) {
+          this.countInput.value = boxHistory.horseCount.toString();
+        }
+      }
+
+      // 金額を復元
+      if (boxHistory.unitAmount && boxHistory.unitAmount > 0) {
+        this.unitAmount = boxHistory.unitAmount;
+        
+        // プリセット金額かチェック
+        const presetAmounts = getPresetAmounts();
+        const isPreset = presetAmounts.includes(boxHistory.unitAmount as any);
+        
+        if (isPreset) {
+          this.isUsingCustomAmount = false;
+          this.customAmount = '';
+          if (this.customInput) {
+            this.customInput.value = '';
+          }
+        } else {
+          this.isUsingCustomAmount = true;
+          this.customAmount = boxHistory.unitAmount.toString();
+          if (this.customInput) {
+            this.customInput.value = boxHistory.unitAmount.toString();
+          }
+        }
+      }
+    }
+
+    private setupKeyboardShortcuts(): void {
+      // グローバルキーボードショートカット（入力フィールドにフォーカスがない場合のみ）
+      document.addEventListener('keydown', (event: KeyboardEvent) => {
+        // 入力フィールドにフォーカスがある場合は無視
+        const target = event.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+          return;
+        }
+
+        // 頭数の増減（↑/↓キー）
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          this.setHorseCount(this.horseCount + 1);
+        } else if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          this.setHorseCount(this.horseCount - 1);
+        }
+
+        // プリセット金額の選択（1-4キー）
+        if (event.key >= '1' && event.key <= '4') {
+          const index = parseInt(event.key) - 1;
+          const presetAmounts = getPresetAmounts();
+          if (index < presetAmounts.length) {
+            event.preventDefault();
+            this.selectPresetAmount(presetAmounts[index]);
+          }
+        }
+      });
+
+      // 頭数入力フィールドでのキーボードショートカット
+      if (this.countInput) {
+        this.countInput.addEventListener('keydown', (event: KeyboardEvent) => {
+          // Enterキーで確定
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            this.countInput?.blur();
+          }
+        });
+      }
     }
 
     private setHorseCount(count: number): void {
@@ -543,6 +656,9 @@ const betTypes = groupedBetTypes;
 
       // 表示を更新
       this.updateDisplay();
+
+      // 履歴を保存（デバウンス）
+      this.saveToHistoryDebounced();
 
       // イベントを発行（他のコンポーネントに通知）
       const event = new CustomEvent('horseCountChange', {
@@ -651,7 +767,7 @@ const betTypes = groupedBetTypes;
                       <div class="text-sm text-gray-600">点数</div>
                       <div class="text-2xl font-bold text-blue-600">${escapeHtml(points)}点</div>
                     </div>
-                    <div class="amount-display text-right">
+                    <div class="amount-display text-right pr-2">
                       <div class="text-xs text-gray-600 mb-1">合計金額</div>
                       <div class="text-lg font-semibold text-green-600">
                         ${escapeHtml(formatYenAmount(totalAmount))}
@@ -737,9 +853,96 @@ const betTypes = groupedBetTypes;
     min-height: 60px;
   }
   
+  /* レスポンシブ対応 */
   @media (max-width: 1024px) {
     .points-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .all-bet-types-points-display h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .horse-count-selection,
+    .amount-selection {
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .horse-count-selection label,
+    .amount-selection label {
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .count-button {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0.5rem;
+    }
+
+    .count-input {
+      width: 4rem;
+      font-size: 1rem;
+    }
+
+    .preset-button {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8125rem;
+      min-height: 44px;
+    }
+
+    .points-grid {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .bet-type-point-card {
+      min-height: 160px;
+      padding: 0.75rem;
+    }
+
+    .bet-type-name {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .points-display .text-2xl {
+      font-size: 1.5rem;
+    }
+
+    .amount-display .text-lg {
+      font-size: 1rem;
+    }
+
+    .bet-type-description {
+      font-size: 0.6875rem;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .all-bet-types-points-display h2 {
+      font-size: 1.25rem;
+    }
+
+    .horse-count-selection,
+    .amount-selection {
+      padding: 0.625rem;
+    }
+
+    .preset-button {
+      padding: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .bet-type-point-card {
+      min-height: 140px;
+      padding: 0.625rem;
     }
   }
   

@@ -1,7 +1,7 @@
 ---
 /**
  * 点数表タブコンポーネント
- * 早見表、BOX点数表、フォーメーションの3つのタブを切り替える
+ * 早見表、BOX点数表、フォーメーション、履歴の4つのタブを切り替える
  */
 import QuickReferenceTable from './QuickReferenceTable.astro';
 import AllBetTypesPointsDisplay from './AllBetTypesPointsDisplay.astro';
@@ -109,6 +109,28 @@ const {
       // イベントリスナーを設定（bindでメソッドを最適化）
       this.container.addEventListener('horseCountChange', this.handleHorseCountChange.bind(this));
       document.addEventListener('amountChange', this.handleAmountChange.bind(this));
+      
+      // キーボードショートカットを設定
+      this.setupKeyboardShortcuts();
+    }
+
+    private setupKeyboardShortcuts(): void {
+      document.addEventListener('keydown', (event: KeyboardEvent) => {
+        // 入力フィールドにフォーカスがある場合は無視
+        const target = event.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+          return;
+        }
+
+        // Ctrl+1/2/3 または Alt+1/2/3 でタブ切り替え
+        if ((event.ctrlKey || event.altKey) && event.key >= '1' && event.key <= '3') {
+          event.preventDefault();
+          const tabIndex = parseInt(event.key) - 1;
+          if (tabIndex < this.tabButtons.length) {
+            this.switchTab(tabIndex);
+          }
+        }
+      });
     }
 
     private handleHorseCountChange(event: Event): void {
@@ -170,6 +192,7 @@ const {
   .tab-button {
     cursor: pointer;
     transition: all 0.2s ease-in-out;
+    min-height: 44px; /* タッチターゲットサイズ */
   }
 
   .tab-button:hover {
@@ -192,6 +215,34 @@ const {
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .tabs-header .flex {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .tabs-header .flex::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-button {
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .tab-button {
+      padding: 0.625rem 0.875rem;
+      font-size: 0.8125rem;
     }
   }
 </style>

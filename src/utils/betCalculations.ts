@@ -201,8 +201,20 @@ export function getPresetAmounts(): readonly number[] {
  * BOX買いの点数計算関数
  */
 
+// 計算結果のキャッシュ（メモ化）
+const combinationCache = new Map<string, number>();
+const permutationCache = new Map<string, number>();
+const boxPointsCache = new Map<string, number>();
+
 /**
- * 組み合わせ数を計算する（nCr）
+ * キャッシュキーを生成する
+ */
+function getCacheKey(...args: (string | number)[]): string {
+  return args.join('_');
+}
+
+/**
+ * 組み合わせ数を計算する（nCr）- メモ化対応
  * @param n 全体の数
  * @param r 選択する数
  * @returns 組み合わせ数
@@ -211,15 +223,27 @@ function combination(n: number, r: number): number {
   if (r > n || r < 0) return 0;
   if (r === 0 || r === n) return 1;
 
+  // キャッシュキーを生成
+  const cacheKey = getCacheKey('C', n, r);
+  
+  // キャッシュを確認
+  if (combinationCache.has(cacheKey)) {
+    return combinationCache.get(cacheKey)!;
+  }
+
   let result = 1;
   for (let i = 0; i < r; i++) {
     result = (result * (n - i)) / (i + 1);
   }
-  return Math.floor(result);
+  const finalResult = Math.floor(result);
+  
+  // キャッシュに保存
+  combinationCache.set(cacheKey, finalResult);
+  return finalResult;
 }
 
 /**
- * 順列数を計算する（nPr）
+ * 順列数を計算する（nPr）- メモ化対応
  * @param n 全体の数
  * @param r 選択する数
  * @returns 順列数
@@ -228,15 +252,26 @@ function permutation(n: number, r: number): number {
   if (r > n || r < 0) return 0;
   if (r === 0) return 1;
 
+  // キャッシュキーを生成
+  const cacheKey = getCacheKey('P', n, r);
+  
+  // キャッシュを確認
+  if (permutationCache.has(cacheKey)) {
+    return permutationCache.get(cacheKey)!;
+  }
+
   let result = 1;
   for (let i = 0; i < r; i++) {
     result *= n - i;
   }
+  
+  // キャッシュに保存
+  permutationCache.set(cacheKey, result);
   return result;
 }
 
 /**
- * BOX買いの点数を計算する
+ * BOX買いの点数を計算する - メモ化対応
  * @param betTypeId 馬券種別ID
  * @param horseCount 選択頭数
  * @returns 点数
@@ -247,33 +282,52 @@ export function calculateBoxPoints(
 ): number {
   if (horseCount < 1) return 0;
 
+  // キャッシュキーを生成
+  const cacheKey = getCacheKey('box', betTypeId, horseCount);
+  
+  // キャッシュを確認
+  if (boxPointsCache.has(cacheKey)) {
+    return boxPointsCache.get(cacheKey)!;
+  }
+
+  let result: number;
+
   switch (betTypeId) {
     case "tansho":
     case "fukusho":
       // 単勝・複勝は頭数分
-      return horseCount;
+      result = horseCount;
+      break;
 
     case "wakuren":
     case "umaren":
     case "wide":
       // 2頭の組み合わせ（順序なし）
-      return combination(horseCount, 2);
+      result = combination(horseCount, 2);
+      break;
 
     case "umatan":
       // 2頭の順列（順序あり）
-      return permutation(horseCount, 2);
+      result = permutation(horseCount, 2);
+      break;
 
     case "sanrenpuku":
       // 3頭の組み合わせ（順序なし）
-      return combination(horseCount, 3);
+      result = combination(horseCount, 3);
+      break;
 
     case "sanrentan":
       // 3頭の順列（順序あり）
-      return permutation(horseCount, 3);
+      result = permutation(horseCount, 3);
+      break;
 
     default:
-      return 0;
+      result = 0;
   }
+
+  // キャッシュに保存
+  boxPointsCache.set(cacheKey, result);
+  return result;
 }
 
 /**

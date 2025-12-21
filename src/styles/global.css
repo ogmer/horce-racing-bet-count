@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+/* ダークモードの影響を防ぐため、明示的にライトモードを設定 */
+html {
+  background-color: #ffffff !important;
+  color-scheme: light;
+}
+
+body {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+/* ダークモードのメディアクエリを無効化 */
+@media (prefers-color-scheme: dark) {
+  html {
+    background-color: #ffffff !important;
+    color-scheme: light;
+  }
+  
+  body {
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+  }
+}

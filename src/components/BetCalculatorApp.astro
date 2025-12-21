@@ -36,12 +36,15 @@ const { className = '' } = Astro.props;
   </main>
 
   <!-- フッター -->
-  <footer class="app-footer mt-12 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
+  <footer class="app-footer mt-12 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm" role="contentinfo">
     <p>
       ※ この計算機は参考用です。実際の馬券購入時は各競馬場の規定をご確認ください。
     </p>
     <p class="mt-2">
-      競馬はギャンブルです。のめりこみすぎないようにほどほどに楽しんでください
+      ※ 競馬はギャンブルです。のめりこみすぎないようにほどほどに楽しんでください
+    </p>
+    <p class="mt-4">
+      お問い合わせ: <a href="mailto:ogmer.net@gmail.com" class="text-blue-600 hover:text-blue-800 underline">ogmer.net@gmail.com</a>
     </p>
   </footer>
 </div>
@@ -54,17 +57,44 @@ const { className = '' } = Astro.props;
   }
 
   /* レスポンシブ対応 */
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
     .bet-calculator-app {
       padding: 1rem;
     }
     
     .app-header h1 {
-      font-size: 2rem;
+      font-size: 1.75rem;
+      line-height: 1.2;
     }
     
     .app-header p {
-      font-size: 1rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .bet-calculator-app {
+      padding: 0.75rem;
+    }
+    
+    .app-header {
+      margin-bottom: 1.5rem;
+    }
+    
+    .app-header h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .app-header p {
+      font-size: 0.8125rem;
+    }
+
+    .app-footer {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      font-size: 0.75rem;
     }
   }
 </style>
