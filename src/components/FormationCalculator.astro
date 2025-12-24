@@ -512,11 +512,11 @@ const frameColors = [
 
       if (!hasSelection) return;
 
-      // Mapを配列に変換
-      const selectionsArray: [number, number[]][] = [];
+      // Map<number, Set<number>>をMap<number, number[]>に変換
+      const selectionsMap: Map<number, number[]> = new Map();
       this.selections.forEach((horses, position) => {
         if (horses.size > 0) {
-          selectionsArray.push([position, Array.from(horses).sort((a, b) => a - b)]);
+          selectionsMap.set(position, Array.from(horses).sort((a, b) => a - b));
         }
       });
 
@@ -525,7 +525,7 @@ const frameColors = [
         type: 'formation',
         timestamp: Date.now(),
         unitAmount: this.unitAmount,
-        selections: this.selections
+        selections: selectionsMap
       };
 
       try {
