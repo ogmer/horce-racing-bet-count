@@ -212,13 +212,17 @@ const betTypes = groupedBetTypes;
               )}
             </div>
             
-            {betType.description && (
-              <div class="bet-type-description mt-2 pt-2 border-t border-gray-200 text-xs text-blue-600 leading-relaxed">
+            {betType.description ? (
+              <div class={`bet-type-description border-t border-gray-200 text-xs text-blue-600 leading-relaxed ${
+                betType.id === 'wakuren' 
+                  ? 'mt-2 pt-2' 
+                  : 'mt-1 pt-1 md:mt-1 md:pt-1'
+              }`}>
                 {betType.description.split('\n').map((line, index) => (
                   <div key={index} class="mb-1">{line}</div>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         );
       })}
@@ -829,11 +833,15 @@ const betTypes = groupedBetTypes;
                   </div>
                 `}
               </div>
-              ${betType.description ? `
-                <div class="bet-type-description mt-2 pt-2 border-t border-gray-200 text-xs text-blue-600 leading-relaxed">
-                  ${descriptionHtml}
-                </div>
-              ` : ''}
+                ${betType.description ? `
+                 <div class="bet-type-description border-t border-gray-200 text-xs text-blue-600 leading-relaxed ${
+                   betType.id === 'wakuren' 
+                     ? 'mt-2 pt-2' 
+                     : 'mt-1 pt-1 md:mt-1 md:pt-1'
+                 }">
+                   ${descriptionHtml}
+                 </div>
+                ` : ''}
             `;
 
             grid.appendChild(card);
@@ -886,6 +894,30 @@ const betTypes = groupedBetTypes;
     white-space: normal;
     word-wrap: break-word;
     flex-shrink: 0;
+  }
+
+  .bet-type-select {
+    width: 100%;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25em 1.25em;
+    padding-right: 2.5rem;
+  }
+
+  .bet-type-select:hover {
+    background-color: #f0f9ff;
+    border-color: #60a5fa;
+  }
+
+  .bet-type-select:focus {
+    background-color: #f0f9ff;
+    outline: none;
+    ring: 2px;
+    ring-color: #3b82f6;
+    border-color: #3b82f6;
   }
   
   .points-amount-row {
@@ -959,6 +991,11 @@ const betTypes = groupedBetTypes;
       padding: 0.75rem;
     }
 
+    /* 枠連・馬連・ワイド以外のカードの高さを縮小 */
+    .bet-type-point-card:not([data-bet-type-id="wakuren"]) {
+      min-height: 140px;
+    }
+
     .bet-type-name {
       font-size: 1rem;
       margin-bottom: 0.5rem;
@@ -974,8 +1011,14 @@ const betTypes = groupedBetTypes;
 
     .bet-type-description {
       font-size: 0.6875rem;
-      margin-top: 0.5rem;
-      padding-top: 0.5rem;
+    }
+
+    /* モバイル版のみ余白を詰める（枠連・馬連・ワイド以外） */
+    @media (max-width: 639px) {
+      .bet-type-description:not([class*="mt-2"]) {
+        margin-top: 0.25rem;
+        padding-top: 0.25rem;
+      }
     }
   }
 

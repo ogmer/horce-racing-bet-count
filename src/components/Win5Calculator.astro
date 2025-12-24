@@ -32,15 +32,15 @@ const { className = '', unitAmount = 100 } = Astro.props;
           const raceNum = i + 1;
           return (
             <div class="race-item p-4 bg-gray-50 border border-gray-200 rounded-lg">
-              <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div class="flex-1">
-                  <label for={`race-${raceNum}-select`} class="block text-base font-semibold text-gray-700 mb-2">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 flex-1">
+                  <label for={`race-${raceNum}-select`} class="text-base font-semibold text-gray-700 whitespace-nowrap">
                     {raceNum}レース目
                   </label>
                   <select
                     id={`race-${raceNum}-select`}
                     data-race-num={raceNum}
-                    class="race-select w-full md:w-32 px-4 py-2 border-2 border-gray-300 rounded-lg text-base font-medium text-gray-700 bg-white hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    class="race-select w-24 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     aria-label={`${raceNum}レース目の選択頭数`}
                   >
                     {Array.from({ length: 18 }, (_, j) => {
@@ -53,9 +53,9 @@ const { className = '', unitAmount = 100 } = Astro.props;
                     })}
                   </select>
                 </div>
-                <div class="text-right">
-                  <div class="text-sm text-gray-600 mb-1">点数</div>
-                  <div class="text-xl font-bold text-blue-600 race-points" data-race-num={raceNum}>
+                <div class="text-right flex-shrink-0">
+                  <div class="text-xs text-gray-600 mb-1">点数</div>
+                  <div class="text-lg font-bold text-blue-600 race-points" data-race-num={raceNum}>
                     1点
                   </div>
                 </div>
@@ -67,22 +67,22 @@ const { className = '', unitAmount = 100 } = Astro.props;
     </div>
 
     <div class="total-calculation p-4 bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-300 rounded-lg">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="total-points">
-          <div class="text-sm text-gray-600 mb-2">合計点数</div>
-          <div class="flex flex-col md:flex-row md:items-center gap-2">
-            <div class="text-lg md:text-xl font-medium text-gray-700" id="win5-calculation-formula">
+      <div class="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
+        <div class="total-points flex-1 min-w-0">
+          <div class="text-xs md:text-sm text-gray-600 mb-1">合計点数</div>
+          <div class="flex items-center gap-1 md:gap-2 flex-wrap">
+            <div class="text-sm md:text-xl font-medium text-gray-700 whitespace-nowrap" id="win5-calculation-formula">
               1×1×1×1×1
             </div>
-            <div class="text-gray-500 hidden md:block">=</div>
-            <div class="text-3xl font-bold text-blue-600" id="win5-total-points">
+            <div class="text-gray-500">=</div>
+            <div class="text-lg md:text-3xl font-bold text-blue-600 whitespace-nowrap" id="win5-total-points">
               1点
             </div>
           </div>
         </div>
-        <div class="total-amount text-right">
-          <div class="text-sm text-gray-600 mb-1">合計金額（1点100円）</div>
-          <div class="text-3xl font-bold text-green-600" id="win5-total-amount">
+        <div class="total-amount text-right flex-shrink-0">
+          <div class="text-xs md:text-sm text-gray-600 mb-1">合計金額（1点100円）</div>
+          <div class="text-lg md:text-3xl font-bold text-green-600 whitespace-nowrap" id="win5-total-amount">
             100円
           </div>
         </div>
@@ -233,11 +233,11 @@ const { className = '', unitAmount = 100 } = Astro.props;
     }
 
     .total-calculation {
-      padding: 1rem;
+      padding: 0.75rem;
     }
 
-    .total-calculation .text-3xl {
-      font-size: 1.5rem;
+    .total-calculation .text-lg {
+      font-size: 1rem;
     }
   }
 
@@ -253,6 +253,19 @@ const { className = '', unitAmount = 100 } = Astro.props;
 
     .race-item {
       padding: 0.75rem;
+    }
+
+    .race-item label {
+      font-size: 0.875rem;
+    }
+
+    .race-select {
+      font-size: 0.8125rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .race-item .race-points {
+      font-size: 1rem;
     }
 
     .total-calculation .text-3xl {
