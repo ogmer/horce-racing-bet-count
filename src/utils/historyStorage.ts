@@ -4,13 +4,15 @@
 
 export interface CalculationHistory {
   id: string;
-  type: 'box' | 'formation';
+  type: 'box' | 'formation' | 'win5';
   timestamp: number;
   // BOX買いの場合
   horseCount?: number;
   unitAmount: number;
   // フォーメーションの場合
   selections?: Map<number, number[]>; // position -> horse numbers
+  // WIN5の場合
+  raceHorseCounts?: number[]; // 各レースの選択頭数 [race1, race2, race3, race4, race5]
   // 計算結果
   results?: {
     betTypeId: string;

@@ -119,6 +119,79 @@ const { className = '', unitAmount = 100 } = Astro.props;
     return parts.join('');
   }
 
+  // historyStorageの関数をインポート（クライアント側で使用）
+  // 注意: Astroの<script>タグ内では直接importできないため、関数を直接定義
+  interface CalculationHistory {
+    id: string;
+    type: 'box' | 'formation' | 'win5';
+    timestamp: number;
+    horseCount?: number;
+    unitAmount: number;
+    selections?: Map<number, number[]>;
+    raceHorseCounts?: number[];
+    results?: {
+      betTypeId: string;
+      points: number;
+      totalAmount: number;
+    }[];
+  }
+
+  const STORAGE_KEY = 'horse-racing-calc-history';
+  const MAX_HISTORY_COUNT = 50;
+
+  function getHistory(): CalculationHistory[] {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return [];
+      
+      const history = JSON.parse(stored);
+      return history.map((item: any) => {
+        if (item.selections && Array.isArray(item.selections)) {
+          const selectionsMap = new Map<number, number[]>();
+          item.selections.forEach(([pos, horses]: [number, number[]]) => {
+            selectionsMap.set(pos, horses);
+          });
+          item.selections = selectionsMap;
+        }
+        return item;
+      });
+    } catch (error) {
+      console.error('履歴の読み込みに失敗しました:', error);
+      return [];
+    }
+  }
+
+  function saveHistory(history: CalculationHistory): void {
+    try {
+      const allHistory = getHistory();
+      
+      // 新しい履歴を先頭に追加
+      allHistory.unshift(history);
+      
+      // 最大件数を超えた場合は古いものを削除
+      if (allHistory.length > MAX_HISTORY_COUNT) {
+        allHistory.splice(MAX_HISTORY_COUNT);
+      }
+      
+      // Mapを配列に変換して保存
+      const serialized = allHistory.map(item => {
+        const serializedItem: any = { ...item };
+        if (item.selections instanceof Map) {
+          serializedItem.selections = Array.from(item.selections.entries());
+        }
+        return serializedItem;
+      });
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
+    } catch (error) {
+      console.error('履歴の保存に失敗しました:', error);
+    }
+  }
+
+  function generateHistoryId(): string {
+    return `calc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
   class Win5Calculator {
     private container: HTMLElement;
     private raceSelects: NodeListOf<HTMLSelectElement>;
@@ -127,6 +200,9 @@ const { className = '', unitAmount = 100 } = Astro.props;
     private calculationFormulaDisplay: HTMLElement | null;
     private racePointsDisplays: NodeListOf<HTMLElement>;
     private unitAmount: number = 100;
+    // パフォーマンス最適化: 計算結果のキャッシュとバッチ処理
+    private racePointsMap: Map<number, HTMLElement> = new Map();
+    private updateFrameId: number | null = null;
 
     constructor(container: HTMLElement) {
       this.container = container;
@@ -135,33 +211,64 @@ const { className = '', unitAmount = 100 } = Astro.props;
       this.totalAmountDisplay = container.querySelector('#win5-total-amount');
       this.calculationFormulaDisplay = container.querySelector('#win5-calculation-formula');
       this.racePointsDisplays = container.querySelectorAll('.race-points');
+      
+      // レース点数表示をマップにキャッシュ
+      this.racePointsDisplays.forEach(display => {
+        const raceNum = display.getAttribute('data-race-num');
+        if (raceNum) {
+          this.racePointsMap.set(parseInt(raceNum, 10), display);
+        }
+      });
+      
       this.init();
     }
 
     private init(): void {
+      // 金額変更イベントをリッスン
+      document.addEventListener('amountChange', (event: any) => {
+        if (event.detail && typeof event.detail.amount === 'number') {
+          this.unitAmount = event.detail.amount;
+          this.calculate();
+        }
+      });
+
       // 各セレクトボックスの変更イベントを設定
       this.raceSelects.forEach((select) => {
         select.addEventListener('change', () => {
           this.calculate();
+          this.saveToHistory();
         });
       });
+
+      // キャッシュから復元
+      this.restoreFromCache();
 
       // 初期計算
       this.calculate();
     }
 
     private calculate(): void {
+      // requestAnimationFrameでバッチ処理
+      if (this.updateFrameId !== null) {
+        cancelAnimationFrame(this.updateFrameId);
+      }
+      
+      this.updateFrameId = requestAnimationFrame(() => {
+        this.calculateImmediate();
+        this.updateFrameId = null;
+      });
+    }
+
+    private calculateImmediate(): void {
       // 各レースの選択頭数を取得
       const horseCounts: number[] = [];
       this.raceSelects.forEach((select) => {
         const count = parseInt(select.value, 10);
         horseCounts.push(count);
         
-        // 各レースの点数を更新
-        const raceNum = select.getAttribute('data-race-num');
-        const racePointsDisplay = Array.from(this.racePointsDisplays).find(
-          (el) => el.getAttribute('data-race-num') === raceNum
-        );
+        // 各レースの点数を更新（キャッシュから取得）
+        const raceNum = parseInt(select.getAttribute('data-race-num') || '0', 10);
+        const racePointsDisplay = this.racePointsMap.get(raceNum);
         if (racePointsDisplay) {
           racePointsDisplay.textContent = `${count}点`;
         }
@@ -187,6 +294,77 @@ const { className = '', unitAmount = 100 } = Astro.props;
 
       if (this.totalAmountDisplay) {
         this.totalAmountDisplay.textContent = formatYenAmountWithKanjiClient(totalAmount);
+      }
+    }
+
+    private saveToHistory(): void {
+      // 各レースの選択頭数を取得
+      const raceHorseCounts: number[] = [];
+      this.raceSelects.forEach((select) => {
+        const count = parseInt(select.value, 10);
+        raceHorseCounts.push(count);
+      });
+
+      // すべて1頭の場合は保存しない（初期状態）
+      if (raceHorseCounts.every(count => count === 1)) {
+        return;
+      }
+
+      const history: CalculationHistory = {
+        id: generateHistoryId(),
+        type: 'win5',
+        timestamp: Date.now(),
+        unitAmount: this.unitAmount,
+        raceHorseCounts: raceHorseCounts
+      };
+
+      try {
+        saveHistory(history);
+        console.log('[WIN5] 履歴を保存:', history);
+      } catch (error) {
+        console.error('[WIN5] 履歴の保存に失敗:', error);
+      }
+    }
+
+    private restoreFromCache(): void {
+      try {
+        const history = getHistory();
+        if (history.length === 0) {
+          console.log('[WIN5] 履歴がありません');
+          return;
+        }
+
+        // 最新のWIN5の履歴を取得
+        const win5History = history.find(h => h.type === 'win5');
+        if (!win5History || !win5History.raceHorseCounts) {
+          console.log('[WIN5] WIN5の履歴がありません');
+          return;
+        }
+
+        console.log('[WIN5] 履歴を復元:', win5History);
+
+        // 各レースの選択頭数を復元
+        const raceHorseCounts = win5History.raceHorseCounts;
+        if (raceHorseCounts.length === 5) {
+          this.raceSelects.forEach((select, index) => {
+            if (index < raceHorseCounts.length) {
+              const count = raceHorseCounts[index];
+              if (count >= 1 && count <= 18) {
+                select.value = count.toString();
+              }
+            }
+          });
+        }
+
+        // 金額を復元
+        if (win5History.unitAmount && win5History.unitAmount > 0) {
+          this.unitAmount = win5History.unitAmount;
+          console.log('[WIN5] 金額を復元:', this.unitAmount);
+        }
+
+        console.log('[WIN5] 選択を復元:', raceHorseCounts);
+      } catch (error) {
+        console.error('[WIN5] 履歴の復元に失敗:', error);
       }
     }
   }

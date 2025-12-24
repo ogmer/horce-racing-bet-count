@@ -261,7 +261,11 @@ const betTypes = groupedBetTypes;
     private customAmount: string = '';
     private validationError: string | null = null;
     private isUsingCustomAmount: boolean = false;
-    private historySaveTimeout: number | null = null;
+    // パフォーマンス最適化: DOM要素とデータのキャッシュ
+    private grid: HTMLElement | null = null;
+    private emptyState: HTMLElement | null = null;
+    private groupedBetTypes: any[] | null = null;
+    private updateFrameId: number | null = null;
 
     constructor(container: HTMLElement) {
       this.container = container;
@@ -269,7 +273,7 @@ const betTypes = groupedBetTypes;
     }
 
     private init(): void {
-      // DOM要素を取得
+      // DOM要素を取得（キャッシュ）
       this.countInput = this.container.querySelector('#box-horse-count-input') as HTMLInputElement;
       this.decreaseButton = this.container.querySelector('#box-decrease-count') as HTMLButtonElement;
       this.increaseButton = this.container.querySelector('#box-increase-count') as HTMLButtonElement;
@@ -277,6 +281,11 @@ const betTypes = groupedBetTypes;
       this.customInput = this.container.querySelector('#box-custom-amount-input') as HTMLInputElement;
       this.clearButton = this.container.querySelector('#box-clear-custom-button') as HTMLButtonElement;
       this.errorContainer = this.container.querySelector('#box-amount-error-message') as HTMLElement;
+      this.grid = this.container.querySelector('.points-grid') as HTMLElement;
+      this.emptyState = this.container.querySelector('.empty-state') as HTMLElement;
+      
+      // グループ化された買い目データを事前に構築（キャッシュ）
+      this.buildGroupedBetTypes();
 
       // 初期値を設定
       if (this.countInput) {
@@ -524,16 +533,7 @@ const betTypes = groupedBetTypes;
         bubbles: true
       });
       this.container.dispatchEvent(event);
-      this.saveToHistoryDebounced();
-    }
-
-    private saveToHistoryDebounced(): void {
-      if (this.historySaveTimeout !== null) {
-        clearTimeout(this.historySaveTimeout);
-      }
-      this.historySaveTimeout = window.setTimeout(() => {
-        this.saveToHistory();
-      }, 2000);
+      this.saveToHistory();
     }
 
     private saveToHistory(): void {
@@ -667,7 +667,7 @@ const betTypes = groupedBetTypes;
       }
 
       this.updateDisplay();
-      this.saveToHistoryDebounced();
+      this.saveToHistory();
 
       const event = new CustomEvent('horseCountChange', {
         detail: {
@@ -681,7 +681,7 @@ const betTypes = groupedBetTypes;
       this.container.dispatchEvent(event);
     }
 
-    private updateDisplay(): void {
+    private buildGroupedBetTypes(): void {
       const allBetTypes = getAllBetTypes();
       const groupedBetTypes = [];
       const groupedBetType = allBetTypes.find(bt => bt.id === 'wakuren');
@@ -714,14 +714,29 @@ const betTypes = groupedBetTypes;
         }
       });
       
-      const betTypes = groupedBetTypes;
-      const grid = this.container.querySelector('.points-grid') as HTMLElement;
-      const emptyState = this.container.querySelector('.empty-state') as HTMLElement;
+      this.groupedBetTypes = groupedBetTypes;
+    }
 
+    private updateDisplay(): void {
+      // requestAnimationFrameでバッチ処理
+      if (this.updateFrameId !== null) {
+        cancelAnimationFrame(this.updateFrameId);
+      }
+      
+      this.updateFrameId = requestAnimationFrame(() => {
+        this.updateDisplayImmediate();
+        this.updateFrameId = null;
+      });
+    }
+
+    private updateDisplayImmediate(): void {
+      const betTypes = this.groupedBetTypes || [];
+      
       if (this.horseCount >= 1) {
-        if (emptyState) emptyState.style.display = 'none';
-        if (grid) {
-          grid.innerHTML = '';
+        if (this.emptyState) this.emptyState.style.display = 'none';
+        if (this.grid) {
+          // DocumentFragmentを使用してパフォーマンスを改善
+          const fragment = document.createDocumentFragment();
           
           betTypes.forEach((betType) => {
             const minCount = getMinimumHorseCount(betType.id);
@@ -794,12 +809,16 @@ const betTypes = groupedBetTypes;
                 ` : ''}
             `;
 
-            grid.appendChild(card);
+            fragment.appendChild(card);
           });
+          
+          // 一度だけDOM操作
+          this.grid.innerHTML = '';
+          this.grid.appendChild(fragment);
         }
       } else {
-        if (grid) grid.style.display = 'none';
-        if (emptyState) emptyState.style.display = 'block';
+        if (this.grid) this.grid.style.display = 'none';
+        if (this.emptyState) this.emptyState.style.display = 'block';
       }
     }
   }
