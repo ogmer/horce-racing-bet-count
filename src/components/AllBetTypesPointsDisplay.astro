@@ -254,8 +254,6 @@ const betTypes = groupedBetTypes;
     private countInput: HTMLInputElement | null = null;
     private decreaseButton: HTMLButtonElement | null = null;
     private increaseButton: HTMLButtonElement | null = null;
-    
-    // 金額選択関連
     private presetButtons: NodeListOf<HTMLButtonElement> | null = null;
     private customInput: HTMLInputElement | null = null;
     private clearButton: HTMLButtonElement | null = null;
@@ -263,7 +261,7 @@ const betTypes = groupedBetTypes;
     private customAmount: string = '';
     private validationError: string | null = null;
     private isUsingCustomAmount: boolean = false;
-
+    private historySaveTimeout: number | null = null;
 
     constructor(container: HTMLElement) {
       this.container = container;
@@ -271,12 +269,10 @@ const betTypes = groupedBetTypes;
     }
 
     private init(): void {
-      // 頭数選択要素を取得
+      // DOM要素を取得
       this.countInput = this.container.querySelector('#box-horse-count-input') as HTMLInputElement;
       this.decreaseButton = this.container.querySelector('#box-decrease-count') as HTMLButtonElement;
       this.increaseButton = this.container.querySelector('#box-increase-count') as HTMLButtonElement;
-
-      // 金額選択要素を取得
       this.presetButtons = this.container.querySelectorAll('.preset-button');
       this.customInput = this.container.querySelector('#box-custom-amount-input') as HTMLInputElement;
       this.clearButton = this.container.querySelector('#box-clear-custom-button') as HTMLButtonElement;
@@ -287,7 +283,6 @@ const betTypes = groupedBetTypes;
         this.horseCount = parseInt(this.countInput.value) || 1;
       }
       
-      // 初期金額を設定（propsから取得）
       const initialAmountAttr = this.container.getAttribute('data-initial-amount');
       if (initialAmountAttr) {
         const parsed = parseInt(initialAmountAttr);
@@ -301,20 +296,18 @@ const betTypes = groupedBetTypes;
       this.setupAmountListeners();
       this.setupKeyboardShortcuts();
 
-      // キャッシュから復元（DOM要素が準備できた後）
+      // キャッシュから復元
       this.restoreFromCache();
 
-      // 初期表示（復元後に更新）
+      // 初期表示を更新
       this.updateAmountUI();
       this.updateDisplay();
     }
 
     private setupHorseCountListeners(): void {
-      // 頭数入力
       if (this.countInput) {
         this.countInput.addEventListener('input', () => {
           const rawValue = this.countInput?.value || '1';
-          // 数値のみを許可（XSS対策）
           const sanitizedValue = rawValue.replace(/[^0-9]/g, '');
           if (sanitizedValue !== rawValue && this.countInput) {
             this.countInput.value = sanitizedValue;
@@ -324,14 +317,12 @@ const betTypes = groupedBetTypes;
         });
       }
 
-      // 減少ボタン
       if (this.decreaseButton) {
         this.decreaseButton.addEventListener('click', () => {
           this.setHorseCount(this.horseCount - 1);
         });
       }
 
-      // 増加ボタン
       if (this.increaseButton) {
         this.increaseButton.addEventListener('click', () => {
           this.setHorseCount(this.horseCount + 1);
@@ -340,7 +331,6 @@ const betTypes = groupedBetTypes;
     }
 
     private setupAmountListeners(): void {
-      // プリセットボタンのイベント設定
       if (this.presetButtons) {
         this.presetButtons.forEach(button => {
           button.addEventListener('click', (event) => {
@@ -353,11 +343,9 @@ const betTypes = groupedBetTypes;
         });
       }
 
-      // カスタム入力のイベント設定
       if (this.customInput) {
         this.customInput.addEventListener('input', (event) => {
           const target = event.target as HTMLInputElement;
-          // 数値のみを許可（XSS対策）
           const sanitizedValue = target.value.replace(/[^0-9]/g, '');
           if (sanitizedValue !== target.value) {
             target.value = sanitizedValue;
@@ -369,14 +357,12 @@ const betTypes = groupedBetTypes;
           this.validateAndApplyCustomAmount();
         });
 
-        // 数字のみ入力を許可（XSS対策）
         this.customInput.addEventListener('keypress', (event) => {
           if (!/[\d]/.test(event.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
             event.preventDefault();
           }
         });
 
-        // ペースト時のサニタイズ
         this.customInput.addEventListener('paste', (event) => {
           event.preventDefault();
           const paste = (event.clipboardData || (window as any).clipboardData).getData('text');
@@ -388,7 +374,6 @@ const betTypes = groupedBetTypes;
         });
       }
 
-      // クリアボタンのイベント設定
       if (this.clearButton) {
         this.clearButton.addEventListener('click', (event) => {
           event.preventDefault();
@@ -403,7 +388,6 @@ const betTypes = groupedBetTypes;
       this.customAmount = '';
       this.validationError = null;
       
-      // カスタム入力をクリア
       if (this.customInput) {
         this.customInput.value = '';
       }
@@ -418,7 +402,6 @@ const betTypes = groupedBetTypes;
       
       if (value.trim()) {
         this.isUsingCustomAmount = true;
-        // プリセットボタンの選択を解除
         this.clearPresetSelection();
       } else {
         this.isUsingCustomAmount = false;
@@ -480,7 +463,6 @@ const betTypes = groupedBetTypes;
     }
 
     private updateAmountUI(): void {
-      // プリセットボタンの状態更新
       if (!this.isUsingCustomAmount && this.presetButtons) {
         this.presetButtons.forEach(button => {
           const amount = parseInt(button.dataset.presetAmount || '0', 10);
@@ -498,7 +480,6 @@ const betTypes = groupedBetTypes;
         this.clearPresetSelection();
       }
 
-      // カスタム入力の状態更新
       this.updateCustomInputStyle();
       this.updateErrorDisplay();
     }
@@ -543,12 +524,8 @@ const betTypes = groupedBetTypes;
         bubbles: true
       });
       this.container.dispatchEvent(event);
-
-      // 履歴を保存（デバウンス）
       this.saveToHistoryDebounced();
     }
-
-    private historySaveTimeout: number | null = null;
 
     private saveToHistoryDebounced(): void {
       if (this.historySaveTimeout !== null) {
@@ -556,7 +533,7 @@ const betTypes = groupedBetTypes;
       }
       this.historySaveTimeout = window.setTimeout(() => {
         this.saveToHistory();
-      }, 2000); // 2秒後に保存
+      }, 2000);
     }
 
     private saveToHistory(): void {
@@ -586,7 +563,6 @@ const betTypes = groupedBetTypes;
           return;
         }
 
-        // 最新のBOX買いの履歴を取得
         const boxHistory = history.find(h => h.type === 'box');
         if (!boxHistory) {
           console.log('[BOX点数表] BOX買いの履歴がありません');
@@ -595,7 +571,6 @@ const betTypes = groupedBetTypes;
 
         console.log('[BOX点数表] 履歴を復元:', boxHistory);
 
-        // 頭数を復元
         if (boxHistory.horseCount && boxHistory.horseCount >= 1 && boxHistory.horseCount <= 18) {
           this.horseCount = boxHistory.horseCount;
           if (this.countInput) {
@@ -604,11 +579,9 @@ const betTypes = groupedBetTypes;
           console.log('[BOX点数表] 頭数を復元:', this.horseCount);
         }
 
-        // 金額を復元
         if (boxHistory.unitAmount && boxHistory.unitAmount > 0) {
           this.unitAmount = boxHistory.unitAmount;
           
-          // プリセット金額かチェック
           const presetAmounts = getPresetAmounts();
           const isPreset = presetAmounts.includes(boxHistory.unitAmount as any);
           
@@ -618,7 +591,6 @@ const betTypes = groupedBetTypes;
             if (this.customInput) {
               this.customInput.value = '';
             }
-            // プリセットボタンを更新
             if (this.presetButtons) {
               this.presetButtons.forEach(button => {
                 const amount = parseInt(button.dataset.presetAmount || '0', 10);
@@ -637,7 +609,6 @@ const betTypes = groupedBetTypes;
             if (this.customInput) {
               this.customInput.value = boxHistory.unitAmount.toString();
             }
-            // プリセットボタンをクリア
             if (this.presetButtons) {
               this.presetButtons.forEach(button => {
                 button.classList.remove('bg-blue-400', 'border-blue-500', 'text-white');
@@ -653,15 +624,12 @@ const betTypes = groupedBetTypes;
     }
 
     private setupKeyboardShortcuts(): void {
-      // グローバルキーボードショートカット（入力フィールドにフォーカスがない場合のみ）
       document.addEventListener('keydown', (event: KeyboardEvent) => {
-        // 入力フィールドにフォーカスがある場合は無視
         const target = event.target as HTMLElement;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
           return;
         }
 
-        // 頭数の増減（↑/↓キー）
         if (event.key === 'ArrowUp') {
           event.preventDefault();
           this.setHorseCount(this.horseCount + 1);
@@ -670,7 +638,6 @@ const betTypes = groupedBetTypes;
           this.setHorseCount(this.horseCount - 1);
         }
 
-        // プリセット金額の選択（1-4キー）
         if (event.key >= '1' && event.key <= '4') {
           const index = parseInt(event.key) - 1;
           const presetAmounts = getPresetAmounts();
@@ -681,10 +648,8 @@ const betTypes = groupedBetTypes;
         }
       });
 
-      // 頭数入力フィールドでのキーボードショートカット
       if (this.countInput) {
         this.countInput.addEventListener('keydown', (event: KeyboardEvent) => {
-          // Enterキーで確定
           if (event.key === 'Enter') {
             event.preventDefault();
             this.countInput?.blur();
@@ -694,22 +659,16 @@ const betTypes = groupedBetTypes;
     }
 
     private setHorseCount(count: number): void {
-      // 範囲チェック
       count = Math.max(1, Math.min(18, count));
       this.horseCount = count;
 
-      // UI更新
       if (this.countInput) {
         this.countInput.value = count.toString();
       }
 
-      // 表示を更新
       this.updateDisplay();
-
-      // 履歴を保存（デバウンス）
       this.saveToHistoryDebounced();
 
-      // イベントを発行（他のコンポーネントに通知）
       const event = new CustomEvent('horseCountChange', {
         detail: {
           horseCount: this.horseCount,
@@ -724,14 +683,9 @@ const betTypes = groupedBetTypes;
 
     private updateDisplay(): void {
       const allBetTypes = getAllBetTypes();
-      
-      // 指定された順序で買い目を配置
-      // 1行目: 単勝、複勝、馬単
-      // 2行目: 枠連・馬連・ワイド、3連複、3連単
       const groupedBetTypes = [];
       const groupedBetType = allBetTypes.find(bt => bt.id === 'wakuren');
       
-      // 1行目の買い目: 単勝、複勝、馬単
       const firstRowIds = ['tansho', 'fukusho', 'umatan'];
       firstRowIds.forEach(id => {
         const betType = allBetTypes.find(bt => bt.id === id);
@@ -740,7 +694,6 @@ const betTypes = groupedBetTypes;
         }
       });
       
-      // 2行目の1列目: 枠連・馬連・ワイド
       if (groupedBetType) {
         const wakurenBetType = allBetTypes.find(bt => bt.id === 'wakuren');
         const umarenBetType = allBetTypes.find(bt => bt.id === 'umaren');
@@ -753,7 +706,6 @@ const betTypes = groupedBetTypes;
         });
       }
       
-      // 2行目の2-3列目: 3連複、3連単
       const secondRowIds = ['sanrenpuku', 'sanrentan'];
       secondRowIds.forEach(id => {
         const betType = allBetTypes.find(bt => bt.id === id);
@@ -767,7 +719,6 @@ const betTypes = groupedBetTypes;
       const emptyState = this.container.querySelector('.empty-state') as HTMLElement;
 
       if (this.horseCount >= 1) {
-        // グリッドを表示
         if (emptyState) emptyState.style.display = 'none';
         if (grid) {
           grid.innerHTML = '';
@@ -787,7 +738,6 @@ const betTypes = groupedBetTypes;
             }`;
             card.setAttribute('data-bet-type-id', betType.id);
 
-            // XSS対策: エスケープ処理
             const escapeHtml = (str: string | number): string => {
               const text = String(str);
               const map: { [key: string]: string } = {
@@ -848,14 +798,12 @@ const betTypes = groupedBetTypes;
           });
         }
       } else {
-        // 空の状態を表示
         if (grid) grid.style.display = 'none';
         if (emptyState) emptyState.style.display = 'block';
       }
     }
   }
 
-  // コンポーネントの初期化
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAllBetTypesPointsDisplay);
   } else {
@@ -871,13 +819,15 @@ const betTypes = groupedBetTypes;
 </script>
 
 <style>
+  /* グリッドレイアウト */
   .points-grid {
+    display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-auto-rows: 1fr;
     align-items: stretch;
-    display: grid;
   }
   
+  /* カードスタイル */
   .bet-type-point-card {
     height: 100%;
     display: flex;
@@ -925,7 +875,7 @@ const betTypes = groupedBetTypes;
     min-height: 60px;
   }
 
-  /* ボタンと入力フィールドの中央揃え */
+  /* ボタンと入力フィールド */
   .count-button {
     display: flex;
     align-items: center;
@@ -935,6 +885,10 @@ const betTypes = groupedBetTypes;
   .count-input {
     text-align: center;
   }
+
+  .custom-input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
   
   /* レスポンシブ対応 */
   @media (max-width: 1024px) {
@@ -943,22 +897,22 @@ const betTypes = groupedBetTypes;
     }
   }
 
-  /* タブレット版（2列・3行表示）で馬単と枠連・馬連・ワイドを左右入れ替え */
   @media (min-width: 768px) and (max-width: 1024px) {
-    /* 単勝: 1行目1列目（デフォルト） */
-    /* 複勝: 1行目2列目（デフォルト） */
-    /* 馬単を2行目2列目に配置 */
+    /* タブレット版：馬単と枠連・馬連・ワイドを左右入れ替え */
     .points-grid .bet-type-point-card[data-bet-type-id="umatan"] {
       grid-row: 2;
       grid-column: 2;
     }
-    /* 枠連・馬連・ワイドを2行目1列目に配置 */
     .points-grid .bet-type-point-card[data-bet-type-id="wakuren"] {
       grid-row: 2;
       grid-column: 1;
     }
-    /* 3連複: 3行目1列目（デフォルト） */
-    /* 3連単: 3行目2列目（デフォルト） */
+  }
+
+  @media (max-width: 768px) {
+    .points-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 640px) {
@@ -1000,17 +954,24 @@ const betTypes = groupedBetTypes;
       min-height: 44px;
     }
 
+    .preset-amounts .grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+
     .points-grid {
       grid-template-columns: 1fr;
       gap: 0.75rem;
+      grid-auto-rows: auto;
+      align-items: start;
     }
 
     .bet-type-point-card {
       min-height: 160px;
       padding: 0.75rem;
+      height: auto;
     }
 
-    /* 枠連・馬連・ワイド以外のカードの高さを縮小 */
     .bet-type-point-card:not([data-bet-type-id="wakuren"]) {
       min-height: 140px;
     }
@@ -1030,15 +991,6 @@ const betTypes = groupedBetTypes;
 
     .bet-type-description {
       font-size: 0.6875rem;
-    }
-
-    .points-grid {
-      grid-auto-rows: auto;
-      align-items: start;
-    }
-
-    .bet-type-point-card {
-      height: auto;
     }
   }
 
@@ -1062,30 +1014,4 @@ const betTypes = groupedBetTypes;
       padding: 0.625rem;
     }
   }
-  
-  @media (max-width: 768px) {
-    .points-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* 金額選択のスタイル */
-
-  .custom-input:focus {
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  /* レスポンシブ対応 */
-  @media (max-width: 640px) {
-    .preset-amounts .grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.5rem;
-    }
-    
-    .preset-button {
-      padding: 0.5rem;
-      font-size: 0.75rem;
-    }
-  }
 </style>
-
