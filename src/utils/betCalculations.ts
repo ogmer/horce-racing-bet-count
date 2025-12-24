@@ -103,6 +103,35 @@ export function formatYenAmount(amount: number): string {
 }
 
 /**
+ * 金額を漢字の単位（万円、億円など）で表示する
+ * @param amount 金額（円）
+ * @returns 漢字の単位を含む金額文字列
+ */
+export function formatYenAmountWithKanji(amount: number): string {
+  if (amount === 0) {
+    return "0円";
+  }
+
+  const oku = Math.floor(amount / 100000000);
+  const man = Math.floor((amount % 100000000) / 10000);
+  const yen = amount % 10000;
+
+  const parts: string[] = [];
+
+  if (oku > 0) {
+    parts.push(`${oku}億円`);
+  }
+  if (man > 0) {
+    parts.push(`${man}万円`);
+  }
+  if (yen > 0 || parts.length === 0) {
+    parts.push(`${yen}円`);
+  }
+
+  return parts.join('');
+}
+
+/**
  * カスタム金額の入力値を検証する
  * @param input 入力値
  * @returns 検証結果オブジェクト

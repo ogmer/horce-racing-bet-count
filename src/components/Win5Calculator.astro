@@ -1,0 +1,263 @@
+---
+/**
+ * WIN5点数計算コンポーネント
+ * 5レース×選択頭数を組み合わせた点数と金額を計算
+ */
+import { formatYenAmountWithKanji } from '../utils/betCalculations';
+
+export interface Props {
+  className?: string;
+  unitAmount?: number;
+}
+
+const { className = '', unitAmount = 100 } = Astro.props;
+---
+
+<div class={`win5-calculator ${className}`}>
+  <h2 class="text-xl font-bold text-gray-800 mb-4">WIN5の点数計算</h2>
+  
+  <div class="win5-info mb-6 p-4 bg-white border-2 border-gray-300 rounded-lg">
+    <p class="text-sm text-gray-700 mb-2">
+      <strong>WIN5について：</strong>5レースの1着馬を組み合わせた馬券です。
+    </p>
+    <p class="text-sm text-gray-700">
+      各レースで選択した頭数を掛け算して合計点数を計算します。
+    </p>
+  </div>
+
+  <div class="win5-calculation-result p-6 bg-white border-2 border-gray-300 rounded-lg">
+    <div class="calculation-details mb-6">
+      <div class="race-calculations flex flex-col gap-3 mb-6">
+        {Array.from({ length: 5 }, (_, i) => {
+          const raceNum = i + 1;
+          return (
+            <div class="race-item p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex-1">
+                  <label for={`race-${raceNum}-select`} class="block text-base font-semibold text-gray-700 mb-2">
+                    {raceNum}レース目
+                  </label>
+                  <select
+                    id={`race-${raceNum}-select`}
+                    data-race-num={raceNum}
+                    class="race-select w-full md:w-32 px-4 py-2 border-2 border-gray-300 rounded-lg text-base font-medium text-gray-700 bg-white hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    aria-label={`${raceNum}レース目の選択頭数`}
+                  >
+                    {Array.from({ length: 18 }, (_, j) => {
+                      const count = j + 1;
+                      return (
+                        <option value={count} selected={count === 1}>
+                          {count}頭
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                <div class="text-right">
+                  <div class="text-sm text-gray-600 mb-1">点数</div>
+                  <div class="text-xl font-bold text-blue-600 race-points" data-race-num={raceNum}>
+                    1点
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+
+    <div class="total-calculation p-4 bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-300 rounded-lg">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="total-points">
+          <div class="text-sm text-gray-600 mb-2">合計点数</div>
+          <div class="flex flex-col md:flex-row md:items-center gap-2">
+            <div class="text-lg md:text-xl font-medium text-gray-700" id="win5-calculation-formula">
+              1×1×1×1×1
+            </div>
+            <div class="text-gray-500 hidden md:block">=</div>
+            <div class="text-3xl font-bold text-blue-600" id="win5-total-points">
+              1点
+            </div>
+          </div>
+        </div>
+        <div class="total-amount text-right">
+          <div class="text-sm text-gray-600 mb-1">合計金額（1点100円）</div>
+          <div class="text-3xl font-bold text-green-600" id="win5-total-amount">
+            100円
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /**
+   * 金額を漢字の単位（万円、億円など）で表示する
+   */
+  function formatYenAmountWithKanjiClient(amount: number): string {
+    if (amount === 0) {
+      return "0円";
+    }
+
+    const oku = Math.floor(amount / 100000000);
+    const man = Math.floor((amount % 100000000) / 10000);
+    const yen = amount % 10000;
+
+    const parts: string[] = [];
+
+    if (oku > 0) {
+      parts.push(`${oku}億円`);
+    }
+    if (man > 0) {
+      parts.push(`${man}万円`);
+    }
+    if (yen > 0 || parts.length === 0) {
+      parts.push(`${yen}円`);
+    }
+
+    return parts.join('');
+  }
+
+  class Win5Calculator {
+    private container: HTMLElement;
+    private raceSelects: NodeListOf<HTMLSelectElement>;
+    private totalPointsDisplay: HTMLElement | null;
+    private totalAmountDisplay: HTMLElement | null;
+    private calculationFormulaDisplay: HTMLElement | null;
+    private racePointsDisplays: NodeListOf<HTMLElement>;
+    private unitAmount: number = 100;
+
+    constructor(container: HTMLElement) {
+      this.container = container;
+      this.raceSelects = container.querySelectorAll('.race-select');
+      this.totalPointsDisplay = container.querySelector('#win5-total-points');
+      this.totalAmountDisplay = container.querySelector('#win5-total-amount');
+      this.calculationFormulaDisplay = container.querySelector('#win5-calculation-formula');
+      this.racePointsDisplays = container.querySelectorAll('.race-points');
+      this.init();
+    }
+
+    private init(): void {
+      // 各セレクトボックスの変更イベントを設定
+      this.raceSelects.forEach((select) => {
+        select.addEventListener('change', () => {
+          this.calculate();
+        });
+      });
+
+      // 初期計算
+      this.calculate();
+    }
+
+    private calculate(): void {
+      // 各レースの選択頭数を取得
+      const horseCounts: number[] = [];
+      this.raceSelects.forEach((select) => {
+        const count = parseInt(select.value, 10);
+        horseCounts.push(count);
+        
+        // 各レースの点数を更新
+        const raceNum = select.getAttribute('data-race-num');
+        const racePointsDisplay = Array.from(this.racePointsDisplays).find(
+          (el) => el.getAttribute('data-race-num') === raceNum
+        );
+        if (racePointsDisplay) {
+          racePointsDisplay.textContent = `${count}点`;
+        }
+      });
+
+      // 合計点数を計算（掛け算）
+      const totalPoints = horseCounts.reduce((acc, count) => acc * count, 1);
+
+      // 合計金額を計算（1点100円）
+      const totalAmount = totalPoints * this.unitAmount;
+
+      // 計算式を生成
+      const formula = horseCounts.map(count => count.toString()).join('×');
+
+      // 表示を更新
+      if (this.calculationFormulaDisplay) {
+        this.calculationFormulaDisplay.textContent = formula;
+      }
+
+      if (this.totalPointsDisplay) {
+        this.totalPointsDisplay.textContent = `${totalPoints.toLocaleString('ja-JP')}点`;
+      }
+
+      if (this.totalAmountDisplay) {
+        this.totalAmountDisplay.textContent = formatYenAmountWithKanjiClient(totalAmount);
+      }
+    }
+  }
+
+  // コンポーネントの初期化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWin5Calculator);
+  } else {
+    initWin5Calculator();
+  }
+
+  function initWin5Calculator(): void {
+    const calculators = document.querySelectorAll('.win5-calculator');
+    calculators.forEach((calc) => {
+      new Win5Calculator(calc as HTMLElement);
+    });
+  }
+</script>
+
+<style>
+  .win5-calculator {
+    width: 100%;
+  }
+
+  .race-item {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .race-item:hover {
+    background-color: #f3f4f6;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .total-calculation {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .win5-calculator h2 {
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .total-calculation {
+      padding: 1rem;
+    }
+
+    .total-calculation .text-3xl {
+      font-size: 1.5rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .win5-calculator h2 {
+      font-size: 1.125rem;
+    }
+
+    .win5-info {
+      padding: 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    .race-item {
+      padding: 0.75rem;
+    }
+
+    .total-calculation .text-3xl {
+      font-size: 1.25rem;
+    }
+  }
+</style>
+

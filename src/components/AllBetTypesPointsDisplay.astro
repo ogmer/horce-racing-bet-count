@@ -174,7 +174,7 @@ const betTypes = groupedBetTypes;
         const points = isValid ? calculateBoxPoints(betType.id, horseCount) : 0;
         const totalAmount = points * unitAmount;
         const cardClass = isValid 
-          ? 'bet-type-point-card p-4 rounded-lg border-2 bg-white border-blue-200'
+          ? 'bet-type-point-card p-4 rounded-lg border-2 bg-white border-gray-300'
           : 'bet-type-point-card p-4 rounded-lg border-2 bg-gray-100 border-gray-200 opacity-60';
         
         return (
@@ -778,7 +778,7 @@ const betTypes = groupedBetTypes;
             const card = document.createElement('div');
             card.className = `bet-type-point-card relative flex flex-col p-4 rounded-lg border-2 ${
               isValid 
-                ? 'bg-white border-blue-200' 
+                ? 'bg-white border-gray-300' 
                 : 'bg-gray-100 border-gray-200 opacity-60'
             }`;
             card.setAttribute('data-bet-type-id', betType.id);

@@ -1,11 +1,12 @@
 ---
 /**
  * 点数表タブコンポーネント
- * 早見表、BOX点数表、フォーメーション、履歴の4つのタブを切り替える
+ * 早見表、BOX点数表、フォーメーション、WIN5の4つのタブを切り替える
  */
 import QuickReferenceTable from './QuickReferenceTable.astro';
 import AllBetTypesPointsDisplay from './AllBetTypesPointsDisplay.astro';
 import FormationCalculator from './FormationCalculator.astro';
+import Win5Calculator from './Win5Calculator.astro';
 import { DEFAULT_AMOUNT } from '../utils/betCalculations';
 
 export interface Props {
@@ -55,6 +56,16 @@ const {
       >
         フォーメーション
       </button>
+      <button
+        type="button"
+        id="tab-win5"
+        role="tab"
+        aria-controls="content-win5"
+        aria-selected="false"
+        class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-all duration-200"
+      >
+        WIN5
+      </button>
     </div>
   </nav>
 
@@ -77,6 +88,14 @@ const {
     <!-- フォーメーションタブ -->
     <div id="content-formation" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-formation">
       <FormationCalculator 
+        className="w-full"
+        unitAmount={unitAmount}
+      />
+    </div>
+
+    <!-- WIN5タブ -->
+    <div id="content-win5" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-win5">
+      <Win5Calculator 
         className="w-full"
         unitAmount={unitAmount}
       />
@@ -122,8 +141,8 @@ const {
           return;
         }
 
-        // Ctrl+1/2/3 または Alt+1/2/3 でタブ切り替え
-        if ((event.ctrlKey || event.altKey) && event.key >= '1' && event.key <= '3') {
+        // Ctrl+1/2/3/4 または Alt+1/2/3/4 でタブ切り替え
+        if ((event.ctrlKey || event.altKey) && event.key >= '1' && event.key <= '4') {
           event.preventDefault();
           const tabIndex = parseInt(event.key) - 1;
           if (tabIndex < this.tabButtons.length) {
