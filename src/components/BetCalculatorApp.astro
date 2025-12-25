@@ -47,13 +47,77 @@ const { className = '' } = Astro.props;
       お問い合わせ: <a href="mailto:ogmer.net@gmail.com" class="text-blue-600 hover:text-blue-800 underline">ogmer.net@gmail.com</a>
     </p>
   </footer>
+
+  <!-- リセットボタン -->
+  <div class="reset-button-container mt-8 text-center">
+    <button
+      type="button"
+      id="reset-all-data-button"
+      class="reset-button px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border-2 border-red-300 rounded-lg hover:bg-red-100 hover:border-red-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+      title="すべての選択とキャッシュをリセット"
+    >
+      <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+      リセット
+    </button>
+  </div>
 </div>
+
+<script>
+  /**
+   * すべてのデータをリセットする
+   */
+  function resetAllData(): void {
+    // 確認ダイアログ
+    if (!confirm('すべての選択とキャッシュをリセットしますか？\nこの操作は取り消せません。')) {
+      return;
+    }
+
+    try {
+      // localStorageから履歴を削除
+      const STORAGE_KEY = 'horse-racing-calc-history';
+      localStorage.removeItem(STORAGE_KEY);
+
+      // 各コンポーネントにリセットイベントを送信
+      const resetEvent = new CustomEvent('resetAllData', {
+        bubbles: true,
+        detail: { timestamp: Date.now() }
+      });
+      document.dispatchEvent(resetEvent);
+
+      // ページをリロードして完全にリセット
+      window.location.reload();
+    } catch (error) {
+      console.error('リセットに失敗しました:', error);
+      alert('リセットに失敗しました。ページを手動でリロードしてください。');
+    }
+  }
+
+  // リセットボタンのイベントリスナーを設定
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initResetButton);
+  } else {
+    initResetButton();
+  }
+
+  function initResetButton(): void {
+    const resetButton = document.getElementById('reset-all-data-button');
+    if (resetButton) {
+      resetButton.addEventListener('click', resetAllData);
+    }
+  }
+</script>
 
 <style>
   .bet-calculator-app {
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
+  }
+
+  .reset-button-container {
+    margin-top: 2rem;
   }
 
   /* レスポンシブ対応 */
@@ -70,6 +134,10 @@ const { className = '' } = Astro.props;
     .app-header p {
       font-size: 0.875rem;
       line-height: 1.5;
+    }
+
+    .reset-button-container {
+      margin-top: 1.5rem;
     }
   }
 
@@ -91,10 +159,19 @@ const { className = '' } = Astro.props;
       font-size: 0.8125rem;
     }
 
+    .reset-button {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+
     .app-footer {
       margin-top: 2rem;
       padding-top: 1.5rem;
       font-size: 0.75rem;
+    }
+
+    .reset-button-container {
+      margin-top: 1rem;
     }
   }
 </style>

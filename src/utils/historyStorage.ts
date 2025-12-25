@@ -87,3 +87,14 @@ export function generateHistoryId(): string {
   return `calc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
+/**
+ * すべての履歴を削除する
+ */
+export function clearHistory(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.error('履歴の削除に失敗しました:', error);
+  }
+}
+
