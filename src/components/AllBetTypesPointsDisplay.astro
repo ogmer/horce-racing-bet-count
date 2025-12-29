@@ -533,7 +533,7 @@ const betTypes = groupedBetTypes;
         bubbles: true
       });
       this.container.dispatchEvent(event);
-      this.saveToHistory();
+        this.saveToHistory();
     }
 
     private saveToHistory(): void {
@@ -731,7 +731,7 @@ const betTypes = groupedBetTypes;
 
     private updateDisplayImmediate(): void {
       const betTypes = this.groupedBetTypes || [];
-      
+
       if (this.horseCount >= 1) {
         if (this.emptyState) this.emptyState.style.display = 'none';
         if (this.grid) {
@@ -798,15 +798,15 @@ const betTypes = groupedBetTypes;
                   </div>
                 `}
               </div>
-                ${betType.description ? `
+              ${betType.description ? `
                  <div class="bet-type-description border-t border-gray-200 text-xs text-blue-600 leading-relaxed ${
                    betType.id === 'wakuren' 
                      ? 'mt-2 pt-2' 
                      : 'mt-1 pt-1 md:mt-1 md:pt-1'
                  }">
-                   ${descriptionHtml}
-                 </div>
-                ` : ''}
+                  ${descriptionHtml}
+                </div>
+              ` : ''}
             `;
 
             fragment.appendChild(card);
