@@ -119,78 +119,13 @@ const { className = '', unitAmount = 100 } = Astro.props;
     return parts.join('');
   }
 
-  // historyStorageの関数をインポート（クライアント側で使用）
-  // 注意: Astroの<script>タグ内では直接importできないため、関数を直接定義
-  interface CalculationHistory {
-    id: string;
-    type: 'box' | 'formation' | 'win5';
-    timestamp: number;
-    horseCount?: number;
-    unitAmount: number;
-    selections?: Map<number, number[]>;
-    raceHorseCounts?: number[];
-    results?: {
-      betTypeId: string;
-      points: number;
-      totalAmount: number;
-    }[];
-  }
-
-  const STORAGE_KEY = 'horse-racing-calc-history';
-  const MAX_HISTORY_COUNT = 50;
-
-  function getHistory(): CalculationHistory[] {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return [];
-      
-      const history = JSON.parse(stored);
-      return history.map((item: any) => {
-        if (item.selections && Array.isArray(item.selections)) {
-          const selectionsMap = new Map<number, number[]>();
-          item.selections.forEach(([pos, horses]: [number, number[]]) => {
-            selectionsMap.set(pos, horses);
-          });
-          item.selections = selectionsMap;
-        }
-        return item;
-      });
-    } catch (error) {
-      console.error('履歴の読み込みに失敗しました:', error);
-      return [];
-    }
-  }
-
-  function saveHistory(history: CalculationHistory): void {
-    try {
-      const allHistory = getHistory();
-      
-      // 新しい履歴を先頭に追加
-      allHistory.unshift(history);
-      
-      // 最大件数を超えた場合は古いものを削除
-      if (allHistory.length > MAX_HISTORY_COUNT) {
-        allHistory.splice(MAX_HISTORY_COUNT);
-      }
-      
-      // Mapを配列に変換して保存
-      const serialized = allHistory.map(item => {
-        const serializedItem: any = { ...item };
-        if (item.selections instanceof Map) {
-          serializedItem.selections = Array.from(item.selections.entries());
-        }
-        return serializedItem;
-      });
-      
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
-    } catch (error) {
-      console.error('履歴の保存に失敗しました:', error);
-    }
-  }
-
-  function generateHistoryId(): string {
-    return `calc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
+  // historyStorageからインポート
+  import {
+    getHistory,
+    historyManager,
+    generateHistoryId,
+    type CalculationHistory
+  } from '../utils/historyStorage';
 
   class Win5Calculator {
     private container: HTMLElement;
@@ -319,8 +254,8 @@ const { className = '', unitAmount = 100 } = Astro.props;
       };
 
       try {
-        saveHistory(history);
-        console.log('[WIN5] 履歴を保存:', history);
+        historyManager.scheduleSave(history);
+        console.log('[WIN5] 履歴を保存スケジュール:', history);
       } catch (error) {
         console.error('[WIN5] 履歴の保存に失敗:', error);
       }

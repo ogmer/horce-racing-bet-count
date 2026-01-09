@@ -240,9 +240,9 @@ const betTypes = groupedBetTypes;
     validateCustomAmount,
     DEFAULT_AMOUNT
   } from '../utils/betCalculations';
-  import { 
-    getHistory, 
-    saveHistory, 
+  import {
+    getHistory,
+    historyManager,
     generateHistoryId,
     type CalculationHistory
   } from '../utils/historyStorage';
@@ -261,11 +261,14 @@ const betTypes = groupedBetTypes;
     private customAmount: string = '';
     private validationError: string | null = null;
     private isUsingCustomAmount: boolean = false;
+    private customInputTimeout: ReturnType<typeof setTimeout> | null = null;
     // パフォーマンス最適化: DOM要素とデータのキャッシュ
     private grid: HTMLElement | null = null;
     private emptyState: HTMLElement | null = null;
     private groupedBetTypes: any[] | null = null;
     private updateFrameId: number | null = null;
+    // Virtual Diffing: 前回のカード状態を保持
+    private previousCardStates = new Map<string, {points: number, amount: number, isValid: boolean}>();
 
     constructor(container: HTMLElement) {
       this.container = container;
@@ -359,7 +362,15 @@ const betTypes = groupedBetTypes;
           if (sanitizedValue !== target.value) {
             target.value = sanitizedValue;
           }
-          this.handleCustomInput(sanitizedValue);
+
+          // デバウンス: 300ms 待ってから処理を実行
+          if (this.customInputTimeout) {
+            clearTimeout(this.customInputTimeout);
+          }
+
+          this.customInputTimeout = setTimeout(() => {
+            this.handleCustomInput(sanitizedValue);
+          }, 300);
         });
 
         this.customInput.addEventListener('blur', () => {
@@ -548,8 +559,8 @@ const betTypes = groupedBetTypes;
       };
 
       try {
-        saveHistory(history);
-        console.log('[BOX点数表] 履歴を保存:', history);
+        historyManager.scheduleSave(history);
+        console.log('[BOX点数表] 履歴を保存スケジュール:', history);
       } catch (error) {
         console.error('[BOX点数表] 履歴の保存に失敗:', error);
       }
@@ -735,15 +746,52 @@ const betTypes = groupedBetTypes;
       if (this.horseCount >= 1) {
         if (this.emptyState) this.emptyState.style.display = 'none';
         if (this.grid) {
-          // DocumentFragmentを使用してパフォーマンスを改善
-          const fragment = document.createDocumentFragment();
-          
+          // Virtual Diffing: 変更があったカードのみ更新
           betTypes.forEach((betType) => {
             const minCount = getMinimumHorseCount(betType.id);
             const maxCount = 18;
             const isValid = this.horseCount >= minCount && this.horseCount < maxCount + 1;
             const points = isValid ? calculateBoxPoints(betType.id, this.horseCount) : 0;
             const totalAmount = points * this.unitAmount;
+
+            const prevState = this.previousCardStates.get(betType.id);
+
+            // 値が変更された場合のみDOMを更新
+            if (!prevState ||
+                prevState.points !== points ||
+                prevState.amount !== totalAmount ||
+                prevState.isValid !== isValid) {
+              this.updateCard(betType, points, totalAmount, isValid, minCount);
+              this.previousCardStates.set(betType.id, {points, amount: totalAmount, isValid});
+            }
+          });
+
+          // 初回表示時のみカードを構築
+          if (this.grid.children.length === 0) {
+            this.buildAllCards();
+          }
+        }
+      } else {
+        if (this.grid) this.grid.style.display = 'none';
+        if (this.emptyState) this.emptyState.style.display = 'block';
+      }
+    }
+
+    /**
+     * 初回表示時に全カードを構築（Virtual Diffing用）
+     */
+    private buildAllCards(): void {
+      if (!this.grid) return;
+
+      const betTypes = this.groupedBetTypes || [];
+      const fragment = document.createDocumentFragment();
+
+      betTypes.forEach((betType) => {
+        const minCount = getMinimumHorseCount(betType.id);
+        const maxCount = 18;
+        const isValid = this.horseCount >= minCount && this.horseCount < maxCount + 1;
+        const points = isValid ? calculateBoxPoints(betType.id, this.horseCount) : 0;
+        const totalAmount = points * this.unitAmount;
 
             const card = document.createElement('div');
             card.className = `bet-type-point-card relative flex flex-col p-4 rounded-lg border-2 ${
@@ -809,16 +857,101 @@ const betTypes = groupedBetTypes;
               ` : ''}
             `;
 
-            fragment.appendChild(card);
-          });
-          
-          // 一度だけDOM操作
-          this.grid.innerHTML = '';
-          this.grid.appendChild(fragment);
+        fragment.appendChild(card);
+      });
+
+      // replaceChildren()を使用（innerHTMLより高速）
+      this.grid.replaceChildren(fragment);
+    }
+
+    /**
+     * 個別のカードを更新（Virtual Diffing用）
+     */
+    private updateCard(betType: any, points: number, totalAmount: number, isValid: boolean, minCount: number): void {
+      if (!this.grid) return;
+
+      const card = this.grid.querySelector(`[data-bet-type-id="${betType.id}"]`);
+      if (!card) {
+        // カードが存在しない場合は全体を再構築
+        this.buildAllCards();
+        return;
+      }
+
+      // カードのスタイルを更新
+      card.className = `bet-type-point-card relative flex flex-col p-4 rounded-lg border-2 ${
+        isValid
+          ? 'bg-white border-gray-300'
+          : 'bg-gray-100 border-gray-200 opacity-60'
+      }`;
+
+      // 点数表示を更新
+      const pointsDisplay = card.querySelector('.text-2xl');
+      if (pointsDisplay) {
+        pointsDisplay.textContent = `${points}点`;
+      }
+
+      // 金額表示を更新
+      const amountDisplay = card.querySelector('.text-lg.font-semibold');
+      if (amountDisplay) {
+        amountDisplay.textContent = formatYenAmount(totalAmount);
+      }
+
+      // 頭数表示を更新
+      const calculationDisplay = card.querySelector('.calculation-display .text-xs');
+      if (calculationDisplay) {
+        calculationDisplay.textContent = `${this.horseCount}頭のBOX買い`;
+      }
+
+      // 無効メッセージ/有効表示の切り替え
+      const flexDiv = card.querySelector('.flex-1');
+      if (flexDiv) {
+        const hasValidDisplay = flexDiv.querySelector('.points-amount-row');
+        const hasInvalidDisplay = flexDiv.querySelector('.invalid-message');
+
+        if (isValid && !hasValidDisplay) {
+          // 有効表示を追加
+          const invalidMsg = flexDiv.querySelector('.invalid-message');
+          if (invalidMsg) invalidMsg.remove();
+
+          const displayHTML = `
+            <div class="points-amount-row flex items-end justify-between mb-2">
+              <div class="points-display">
+                <div class="text-sm text-gray-600">点数</div>
+                <div class="text-2xl font-bold text-blue-600">${points}点</div>
+              </div>
+              <div class="amount-display text-right pr-2">
+                <div class="text-xs text-gray-600 mb-1">合計金額</div>
+                <div class="text-lg font-semibold text-green-600">
+                  ${formatYenAmount(totalAmount)}
+                </div>
+              </div>
+            </div>
+            <div class="calculation-display mb-2">
+              <div class="text-xs text-gray-500">
+                ${this.horseCount}頭のBOX買い
+              </div>
+            </div>
+          `;
+          const nameDiv = flexDiv.querySelector('.bet-type-name');
+          if (nameDiv) {
+            nameDiv.insertAdjacentHTML('afterend', displayHTML);
+          }
+        } else if (!isValid && !hasInvalidDisplay) {
+          // 無効メッセージを追加
+          const pointsRow = flexDiv.querySelector('.points-amount-row');
+          const calcDisplay = flexDiv.querySelector('.calculation-display');
+          if (pointsRow) pointsRow.remove();
+          if (calcDisplay) calcDisplay.remove();
+
+          const nameDiv = flexDiv.querySelector('.bet-type-name');
+          if (nameDiv) {
+            nameDiv.insertAdjacentHTML('afterend', `
+              <div class="invalid-message text-sm text-gray-500">
+                最小${minCount}頭以上必要
+              </div>
+            `);
+          }
         }
-      } else {
-        if (this.grid) this.grid.style.display = 'none';
-        if (this.emptyState) this.emptyState.style.display = 'block';
       }
     }
   }

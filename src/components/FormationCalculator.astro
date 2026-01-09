@@ -174,9 +174,9 @@ const frameColors = [
 
 <script>
   import { formatYenAmount, getMinimumHorseCount } from '../utils/betCalculations';
-  import { 
-    getHistory, 
-    saveHistory, 
+  import {
+    getHistory,
+    historyManager,
     generateHistoryId,
     type CalculationHistory
   } from '../utils/historyStorage';
@@ -190,6 +190,15 @@ const frameColors = [
     private amountDisplays: Map<string, HTMLElement> = new Map();
     private calculationCache: Map<string, { points: number; timestamp: number }> = new Map();
     private updateFrameId: number | null = null;
+    // 賭け式の依存関係: 各賭け式がどのpositionに依存するか
+    private readonly BET_TYPE_DEPENDENCIES: Record<string, number[]> = {
+      'wakuren': [1, 2],
+      'umaren': [1, 2],
+      'umatan': [1, 2],
+      'wide': [1, 2],
+      'sanrenpuku': [1, 2, 3],
+      'sanrentan': [1, 2, 3]
+    };
 
     constructor(container: HTMLElement) {
       this.container = container;
@@ -221,15 +230,19 @@ const frameColors = [
         });
       }
 
-      // チェックボックス
-      const checkboxes = this.container.querySelectorAll('.horse-checkbox');
-      checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
-          const position = parseInt(checkbox.getAttribute('data-position') || '0');
-          const horseNum = parseInt(checkbox.getAttribute('data-horse-num') || '0');
-          this.toggleHorse(position, horseNum, (checkbox as HTMLInputElement).checked);
+      // チェックボックス - イベント委譲で最適化
+      const formationTable = this.container.querySelector('.formation-table');
+      if (formationTable) {
+        formationTable.addEventListener('change', (event) => {
+          const target = event.target as HTMLElement;
+          if (target.classList.contains('horse-checkbox')) {
+            const checkbox = target as HTMLInputElement;
+            const position = parseInt(checkbox.getAttribute('data-position') || '0');
+            const horseNum = parseInt(checkbox.getAttribute('data-horse-num') || '0');
+            this.toggleHorse(position, horseNum, checkbox.checked);
+          }
         });
-      });
+      }
 
       // 行選択ボタン
       const selectRowButtons = this.container.querySelectorAll('.select-row-button');
@@ -281,8 +294,9 @@ const frameColors = [
         selection.delete(horseNum);
       }
 
-      this.updateAllCalculations();
-      
+      // 選択的再計算: 変更されたpositionに影響を受ける賭け式のみ再計算
+      this.calculateForChangedPosition(position);
+
       // 履歴を保存
       this.saveToHistory();
     }
@@ -421,6 +435,11 @@ const frameColors = [
     private calculateFormationPoints(betTypeId: string, selectedPositions: number[][]): number {
       if (selectedPositions.length === 0) return 0;
 
+      // 早期終了: 空の選択をチェック
+      for (const positions of selectedPositions) {
+        if (positions.length === 0) return 0;
+      }
+
       // 2頭買いの場合（馬連、馬単、枠連、ワイド）
       if (selectedPositions.length === 2) {
         const [first, second] = selectedPositions;
@@ -468,7 +487,12 @@ const frameColors = [
       // 3頭買いの場合（3連複、3連単）
       if (selectedPositions.length === 3) {
         const [first, second, third] = selectedPositions;
-        
+
+        // 早期終了: 3連単/3連複は各positionに最低1頭必要
+        if (first.length < 1 || second.length < 1 || third.length < 1) {
+          return 0;
+        }
+
         if (betTypeId === 'sanrentan') {
           // 3連単：順序あり（順列）
           // 1着の選択数 × 2着の選択数 × 3着の選択数（同じ馬は選べない）
@@ -509,12 +533,36 @@ const frameColors = [
       return 0;
     }
 
+    /**
+     * 変更されたpositionに影響を受ける賭け式のみ再計算（選択的最適化）
+     * 例: position 1が変更された場合、全ての賭け式を再計算
+     *     position 3が変更された場合、3連複と3連単のみ再計算
+     */
+    private calculateForChangedPosition(position: number): void {
+      if (this.updateFrameId !== null) {
+        cancelAnimationFrame(this.updateFrameId);
+      }
+
+      this.updateFrameId = requestAnimationFrame(() => {
+        // 変更されたpositionに依存する賭け式のみフィルタリング
+        const affectedBetTypes = Object.entries(this.BET_TYPE_DEPENDENCIES)
+          .filter(([_, deps]) => deps.includes(position))
+          .map(([id, _]) => id);
+
+        affectedBetTypes.forEach(betTypeId => {
+          this.calculateForBetType(betTypeId);
+        });
+
+        this.updateFrameId = null;
+      });
+    }
+
     private updateAllCalculations(): void {
       // requestAnimationFrameでバッチ処理
       if (this.updateFrameId !== null) {
         cancelAnimationFrame(this.updateFrameId);
       }
-      
+
       this.updateFrameId = requestAnimationFrame(() => {
         const betTypeIds = ['wakuren', 'umaren', 'umatan', 'wide', 'sanrenpuku', 'sanrentan'];
         betTypeIds.forEach(betTypeId => {
@@ -547,11 +595,11 @@ const frameColors = [
 
       if (!hasSelection) return;
 
-      // Map<number, Set<number>>をMap<number, number[]>に変換
-      const selectionsMap: Map<number, number[]> = new Map();
+      // Map<number, Set<number>>を配列形式Array<[number, number[]]>に変換
+      const selectionsArray: Array<[number, number[]]> = [];
       this.selections.forEach((horses, position) => {
         if (horses.size > 0) {
-          selectionsMap.set(position, Array.from(horses).sort((a, b) => a - b));
+          selectionsArray.push([position, Array.from(horses).sort((a, b) => a - b)]);
         }
       });
 
@@ -560,12 +608,12 @@ const frameColors = [
         type: 'formation',
         timestamp: Date.now(),
         unitAmount: this.unitAmount,
-        selections: selectionsMap
+        selections: selectionsArray
       };
 
       try {
-        saveHistory(history);
-        console.log('[フォーメーション] 履歴を保存:', history);
+        historyManager.scheduleSave(history);
+        console.log('[フォーメーション] 履歴を保存スケジュール:', history);
       } catch (error) {
         console.error('[フォーメーション] 履歴の保存に失敗:', error);
       }
