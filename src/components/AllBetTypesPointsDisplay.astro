@@ -187,7 +187,7 @@ const betTypes = groupedBetTypes;
               {isValid ? (
                 <div>
                   <div class="points-amount-row flex items-end justify-between mb-2">
-                    <div class="points-display">
+                    <div class="points-display pl-2">
                       <div class="text-sm text-gray-600">点数</div>
                       <div class="text-2xl font-bold text-blue-600">{points}点</div>
                     </div>
@@ -229,6 +229,40 @@ const betTypes = groupedBetTypes;
     </div>
   ) : null}
 </div>
+
+<!-- Hidden templates for efficient DOM cloning -->
+<template id="bet-card-template">
+  <div class="bet-type-point-card relative flex flex-col p-4 rounded-lg border-2">
+    <div class="flex-1">
+      <div class="bet-type-name text-lg font-bold text-gray-800 mb-2"></div>
+      <div class="card-content">
+        <!-- Will be populated based on validity -->
+      </div>
+    </div>
+    <div class="bet-type-description border-t border-gray-200 text-xs text-blue-600 leading-relaxed hidden">
+    </div>
+  </div>
+</template>
+
+<template id="valid-card-content-template">
+  <div class="points-amount-row flex items-end justify-between mb-2">
+    <div class="points-display">
+      <div class="text-sm text-gray-600">点数</div>
+      <div class="text-2xl font-bold text-blue-600 points-value"></div>
+    </div>
+    <div class="amount-display text-right pr-2">
+      <div class="text-xs text-gray-600 mb-1">合計金額</div>
+      <div class="text-lg font-semibold text-green-600 amount-value"></div>
+    </div>
+  </div>
+  <div class="calculation-display mb-2">
+    <div class="text-xs text-gray-500 horse-count-display"></div>
+  </div>
+</template>
+
+<template id="invalid-card-content-template">
+  <div class="invalid-message text-sm text-gray-500"></div>
+</template>
 
 <script>
   import { 
@@ -778,9 +812,108 @@ const betTypes = groupedBetTypes;
     }
 
     /**
-     * 初回表示時に全カードを構築（Virtual Diffing用）
+     * 初回表示時に全カードを構築（テンプレートクローニング最適化版）
      */
     private buildAllCards(): void {
+      if (!this.grid) return;
+
+      const betTypes = this.groupedBetTypes || [];
+      const fragment = document.createDocumentFragment();
+
+      // Cache template references
+      const cardTemplate = document.getElementById('bet-card-template') as HTMLTemplateElement;
+      const validTemplate = document.getElementById('valid-card-content-template') as HTMLTemplateElement;
+      const invalidTemplate = document.getElementById('invalid-card-content-template') as HTMLTemplateElement;
+
+      if (!cardTemplate || !validTemplate || !invalidTemplate) {
+        console.error('Templates not found, falling back to innerHTML');
+        this.buildAllCardsLegacy(); // Fallback
+        return;
+      }
+
+      betTypes.forEach((betType) => {
+        const minCount = getMinimumHorseCount(betType.id);
+        const maxCount = 18;
+        const isValid = this.horseCount >= minCount && this.horseCount < maxCount + 1;
+        const points = isValid ? calculateBoxPoints(betType.id, this.horseCount) : 0;
+        const totalAmount = points * this.unitAmount;
+
+        // Clone card template
+        const card = cardTemplate.content.cloneNode(true) as DocumentFragment;
+        const cardElement = card.querySelector('.bet-type-point-card') as HTMLElement;
+
+        if (!cardElement) return;
+
+        // Set attributes and classes
+        cardElement.setAttribute('data-bet-type-id', betType.id);
+        cardElement.className = `bet-type-point-card relative flex flex-col p-4 rounded-lg border-2 ${
+          isValid
+            ? 'bg-white border-gray-300'
+            : 'bg-gray-100 border-gray-200 opacity-60'
+        }`;
+
+        // Set bet type name
+        const nameElement = cardElement.querySelector('.bet-type-name');
+        if (nameElement) {
+          nameElement.textContent = betType.displayName;
+        }
+
+        // Populate content based on validity
+        const contentContainer = cardElement.querySelector('.card-content');
+        if (contentContainer) {
+          if (isValid) {
+            const validContent = validTemplate.content.cloneNode(true) as DocumentFragment;
+            const pointsValue = validContent.querySelector('.points-value');
+            const amountValue = validContent.querySelector('.amount-value');
+            const horseCountDisplay = validContent.querySelector('.horse-count-display');
+
+            if (pointsValue) pointsValue.textContent = `${points}点`;
+            if (amountValue) amountValue.textContent = formatYenAmount(totalAmount);
+            if (horseCountDisplay) horseCountDisplay.textContent = `${this.horseCount}頭のBOX買い`;
+
+            contentContainer.appendChild(validContent);
+          } else {
+            const invalidContent = invalidTemplate.content.cloneNode(true) as DocumentFragment;
+            const invalidMsg = invalidContent.querySelector('.invalid-message');
+            if (invalidMsg) invalidMsg.textContent = `最小${minCount}頭以上必要`;
+
+            contentContainer.appendChild(invalidContent);
+          }
+        }
+
+        // Add description if exists
+        if (betType.description) {
+          const descElement = cardElement.querySelector('.bet-type-description');
+          if (descElement) {
+            descElement.classList.remove('hidden');
+            if (betType.id === 'wakuren') {
+              descElement.classList.add('mt-2', 'pt-2');
+            } else {
+              descElement.classList.add('mt-1', 'pt-1');
+            }
+
+            // Create description content efficiently
+            const lines = betType.description.split('\n');
+            lines.forEach(line => {
+              const lineDiv = document.createElement('div');
+              lineDiv.className = 'mb-1';
+              lineDiv.textContent = line;
+              descElement.appendChild(lineDiv);
+            });
+          }
+        }
+
+        fragment.appendChild(card);
+      });
+
+      // Single DOM operation
+      this.grid.replaceChildren(fragment);
+    }
+
+    /**
+     * フォールバック実装（innerHTML使用）
+     */
+    private buildAllCardsLegacy(): void {
       if (!this.grid) return;
 
       const betTypes = this.groupedBetTypes || [];
@@ -795,8 +928,8 @@ const betTypes = groupedBetTypes;
 
             const card = document.createElement('div');
             card.className = `bet-type-point-card relative flex flex-col p-4 rounded-lg border-2 ${
-              isValid 
-                ? 'bg-white border-gray-300' 
+              isValid
+                ? 'bg-white border-gray-300'
                 : 'bg-gray-100 border-gray-200 opacity-60'
             }`;
             card.setAttribute('data-bet-type-id', betType.id);
@@ -813,7 +946,7 @@ const betTypes = groupedBetTypes;
               return text.replace(/[&<>"']/g, (m) => map[m]);
             };
 
-            const descriptionHtml = betType.description 
+            const descriptionHtml = betType.description
               ? betType.description.split('\n').map(line => `<div class="mb-1">${escapeHtml(line)}</div>`).join('')
               : '';
 
@@ -824,7 +957,7 @@ const betTypes = groupedBetTypes;
                 </div>
                 ${isValid ? `
                   <div class="points-amount-row flex items-end justify-between mb-2">
-                    <div class="points-display">
+                    <div class="points-display pl-2">
                       <div class="text-sm text-gray-600">点数</div>
                       <div class="text-2xl font-bold text-blue-600">${escapeHtml(points)}点</div>
                     </div>
@@ -848,8 +981,8 @@ const betTypes = groupedBetTypes;
               </div>
               ${betType.description ? `
                  <div class="bet-type-description border-t border-gray-200 text-xs text-blue-600 leading-relaxed ${
-                   betType.id === 'wakuren' 
-                     ? 'mt-2 pt-2' 
+                   betType.id === 'wakuren'
+                     ? 'mt-2 pt-2'
                      : 'mt-1 pt-1 md:mt-1 md:pt-1'
                  }">
                   ${descriptionHtml}
@@ -915,7 +1048,7 @@ const betTypes = groupedBetTypes;
 
           const displayHTML = `
             <div class="points-amount-row flex items-end justify-between mb-2">
-              <div class="points-display">
+              <div class="points-display pl-2">
                 <div class="text-sm text-gray-600">点数</div>
                 <div class="text-2xl font-bold text-blue-600">${points}点</div>
               </div>
@@ -1036,6 +1169,18 @@ const betTypes = groupedBetTypes;
 
   .count-input {
     text-align: center;
+  }
+
+  /* number型入力フィールドのスピンボタンを非表示にして中央揃えを維持 */
+  .count-input::-webkit-outer-spin-button,
+  .count-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .count-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
   }
 
   .custom-input:focus {
