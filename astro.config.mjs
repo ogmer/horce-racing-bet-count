@@ -5,15 +5,25 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
-  site: process.env.SITE_URL || 'https://example.com',
+  site: process.env.SITE_URL || 'https://horce-racing-bet-count.vercel.app',
   vite: {
     plugins: [tailwindcss()]
   },
   integrations: [
     sitemap({
       changefreq: 'weekly',
-      priority: 0.7,
+      priority: 1.0,
       lastmod: new Date(),
+      i18n: {
+        defaultLocale: 'ja',
+        locales: {
+          ja: 'ja-JP'
+        }
+      }
     })
-  ]
+  ],
+  compressHTML: true,
+  build: {
+    inlineStylesheets: 'auto'
+  }
 });

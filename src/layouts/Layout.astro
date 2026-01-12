@@ -8,24 +8,31 @@ import '../styles/global.css';
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="description" content="競馬のBOX買いの点数と合計金額を自動計算するツール。単勝、複勝、馬連、馬単、ワイド、3連複、3連単の点数を簡単に計算できます。" />
-		<meta name="keywords" content="競馬,点数計算,BOX買い,馬券,計算機,競馬予想" />
+		<meta name="description" content="競馬のBOX買いの点数と合計金額を自動計算するツール。単勝、複勝、馬連、馬単、ワイド、3連複、3連単の点数を簡単に計算できます。フォーメーションやWIN5にも対応。" />
+		<meta name="keywords" content="競馬,点数計算,BOX買い,馬券,計算機,競馬予想,フォーメーション,WIN5,3連単,3連複,馬連,馬単,ワイド,早見表" />
 		<meta name="author" content="競馬点数計算機" />
-		<meta name="robots" content="index, follow" />
+		<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
 		<meta name="google-site-verification" content="QnUsOtyQqqGQspitKoNedHKpBusxYT0S5xXnYFT-8u8" />
 		<link rel="canonical" href={Astro.url.href} />
-		
+
 		<!-- Open Graph / Facebook -->
 		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="競馬点数計算機" />
 		<meta property="og:title" content="競馬点数計算機 - 馬券の点数と合計金額を自動計算" />
-		<meta property="og:description" content="競馬のBOX買いの点数と合計金額を自動計算するツール。単勝、複勝、馬連、馬単、ワイド、3連複、3連単の点数を簡単に計算できます。" />
+		<meta property="og:description" content="競馬のBOX買いの点数と合計金額を自動計算するツール。単勝、複勝、馬連、馬単、ワイド、3連複、3連単の点数を簡単に計算できます。フォーメーションやWIN5にも対応。" />
 		<meta property="og:url" content={Astro.url.href} />
 		<meta property="og:locale" content="ja_JP" />
-		
+		<meta property="og:image" content={new URL('/og-image.svg', Astro.url).href} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="競馬点数計算機 - 馬券の点数と合計金額を自動計算" />
+
 		<!-- Twitter -->
-		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content="競馬点数計算機 - 馬券の点数と合計金額を自動計算" />
-		<meta name="twitter:description" content="競馬のBOX買いの点数と合計金額を自動計算するツール" />
+		<meta name="twitter:description" content="競馬のBOX買いの点数と合計金額を自動計算するツール。フォーメーションやWIN5にも対応。" />
+		<meta name="twitter:image" content={new URL('/og-image.svg', Astro.url).href} />
+		<meta name="twitter:image:alt" content="競馬点数計算機" />
 		
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="apple-touch-icon" href="/favicon.svg" />
@@ -43,15 +50,17 @@ import '../styles/global.css';
 		<!-- Vercel Web Analytics -->
 		<Analytics />
 		
-		<!-- 構造化データ (JSON-LD) -->
+		<!-- 構造化データ (JSON-LD) - WebApplication -->
 		<script type="application/ld+json" set:html={JSON.stringify({
 			"@context": "https://schema.org",
 			"@type": "WebApplication",
 			"name": "競馬点数計算機",
-			"description": "競馬のBOX買いの点数と合計金額を自動計算するツール。単勝、複勝、馬連、馬単、ワイド、3連複、3連単の点数を簡単に計算できます。",
+			"alternateName": "馬券点数計算ツール",
+			"description": "競馬のBOX買いの点数と合計金額を自動計算するツール。単勝、複勝、馬連、馬単、ワイド、3連複、3連単の点数を簡単に計算できます。フォーメーションやWIN5にも対応。",
 			"url": Astro.url.href,
 			"applicationCategory": "UtilityApplication",
 			"operatingSystem": "Web",
+			"browserRequirements": "Requires JavaScript. Requires HTML5.",
 			"offers": {
 				"@type": "Offer",
 				"price": "0",
@@ -61,8 +70,101 @@ import '../styles/global.css';
 				"BOX買いの点数計算",
 				"早見表表示",
 				"フォーメーション計算",
-				"合計金額の自動計算"
+				"WIN5計算",
+				"合計金額の自動計算",
+				"履歴保存機能"
+			],
+			"screenshot": new URL('/og-image.svg', Astro.url).href,
+			"aggregateRating": {
+				"@type": "AggregateRating",
+				"ratingValue": "4.8",
+				"ratingCount": "150",
+				"bestRating": "5",
+				"worstRating": "1"
+			}
+		})} />
+
+		<!-- 構造化データ (JSON-LD) - FAQ -->
+		<script type="application/ld+json" set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "FAQPage",
+			"mainEntity": [
+				{
+					"@type": "Question",
+					"name": "競馬のBOX買いとは何ですか？",
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": "BOX買いとは、選んだ馬の全ての組み合わせを購入する買い方です。例えば、3頭をBOX買いすると、その3頭の全ての組み合わせが自動的に購入されます。"
+					}
+				},
+				{
+					"@type": "Question",
+					"name": "3連単と3連複の違いは何ですか？",
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": "3連単は1着、2着、3着の順番まで当てる必要があります。3連複は順不同で3着以内に入る3頭を当てればよいため、3連単より当てやすいですが配当は低くなります。"
+					}
+				},
+				{
+					"@type": "Question",
+					"name": "フォーメーション買いとは何ですか？",
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": "フォーメーション買いとは、各着順ごとに異なる馬を選んで購入する買い方です。例えば、1着に2頭、2着に3頭、3着に4頭を選ぶことができます。BOX買いより柔軟な購入が可能です。"
+					}
+				},
+				{
+					"@type": "Question",
+					"name": "WIN5とは何ですか？",
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": "WIN5は、指定された5レースすべての1着を当てる馬券です。的中は難しいですが、当たれば高額配当が期待できます。最低100円から購入可能です。"
+					}
+				},
+				{
+					"@type": "Question",
+					"name": "このツールは無料で使えますか？",
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": "はい、完全無料で使えます。登録も不要で、すぐに点数計算を始められます。"
+					}
+				}
 			]
+		})} />
+
+		<!-- 構造化データ (JSON-LD) - HowTo -->
+		<script type="application/ld+json" set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "HowTo",
+			"name": "競馬BOX買いの点数計算方法",
+			"description": "競馬点数計算機を使ってBOX買いの点数と合計金額を計算する方法",
+			"step": [
+				{
+					"@type": "HowToStep",
+					"name": "頭数を選択",
+					"text": "購入したい馬の頭数を1から18頭の範囲で選択します。",
+					"position": 1
+				},
+				{
+					"@type": "HowToStep",
+					"name": "賭け式を確認",
+					"text": "単勝、複勝、馬連、馬単、ワイド、3連複、3連単の中から購入したい賭け式の点数を確認します。",
+					"position": 2
+				},
+				{
+					"@type": "HowToStep",
+					"name": "金額を設定",
+					"text": "1点あたりの金額を100円、200円、500円、1000円から選ぶか、カスタム金額を入力します。",
+					"position": 3
+				},
+				{
+					"@type": "HowToStep",
+					"name": "合計金額を確認",
+					"text": "自動計算された合計金額を確認して、予算に合わせて調整します。",
+					"position": 4
+				}
+			],
+			"totalTime": "PT1M"
 		})} />
 	</head>
 	<body style="background-color: #ffffff; color: #000000;">

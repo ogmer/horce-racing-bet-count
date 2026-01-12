@@ -1,5 +1,10 @@
 User-agent: *
 Allow: /
+Disallow: /api/
 
-Sitemap: /sitemap-index.xml
+# Crawl-delay
+Crawl-delay: 1
+
+# Sitemap
+Sitemap: https://horce-racing-bet-count.vercel.app/sitemap-index.xml
 
