@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(bun run dev)",
+      "Bash(timeout /t 5)",
+      "Bash(bun run build:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
