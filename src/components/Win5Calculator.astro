@@ -255,7 +255,6 @@ const { className = '', unitAmount = 100 } = Astro.props;
 
       try {
         historyManager.scheduleSave(history);
-        console.log('[WIN5] 履歴を保存スケジュール:', history);
       } catch (error) {
         console.error('[WIN5] 履歴の保存に失敗:', error);
       }
@@ -265,18 +264,14 @@ const { className = '', unitAmount = 100 } = Astro.props;
       try {
         const history = getHistory();
         if (history.length === 0) {
-          console.log('[WIN5] 履歴がありません');
           return;
         }
 
         // 最新のWIN5の履歴を取得
         const win5History = history.find(h => h.type === 'win5');
         if (!win5History || !win5History.raceHorseCounts) {
-          console.log('[WIN5] WIN5の履歴がありません');
           return;
         }
-
-        console.log('[WIN5] 履歴を復元:', win5History);
 
         // 各レースの選択頭数を復元
         const raceHorseCounts = win5History.raceHorseCounts;
@@ -294,10 +289,8 @@ const { className = '', unitAmount = 100 } = Astro.props;
         // 金額を復元
         if (win5History.unitAmount && win5History.unitAmount > 0) {
           this.unitAmount = win5History.unitAmount;
-          console.log('[WIN5] 金額を復元:', this.unitAmount);
         }
 
-        console.log('[WIN5] 選択を復元:', raceHorseCounts);
       } catch (error) {
         console.error('[WIN5] 履歴の復元に失敗:', error);
       }

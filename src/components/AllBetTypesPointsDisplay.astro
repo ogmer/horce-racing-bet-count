@@ -594,7 +594,6 @@ const betTypes = groupedBetTypes;
 
       try {
         historyManager.scheduleSave(history);
-        console.log('[BOX点数表] 履歴を保存スケジュール:', history);
       } catch (error) {
         console.error('[BOX点数表] 履歴の保存に失敗:', error);
       }
@@ -604,24 +603,20 @@ const betTypes = groupedBetTypes;
       try {
         const history = getHistory();
         if (history.length === 0) {
-          console.log('[BOX点数表] 履歴がありません');
           return;
         }
 
         const boxHistory = history.find(h => h.type === 'box');
         if (!boxHistory) {
-          console.log('[BOX点数表] BOX買いの履歴がありません');
           return;
         }
 
-        console.log('[BOX点数表] 履歴を復元:', boxHistory);
 
         if (boxHistory.horseCount && boxHistory.horseCount >= 1 && boxHistory.horseCount <= 18) {
           this.horseCount = boxHistory.horseCount;
           if (this.countInput) {
             this.countInput.value = boxHistory.horseCount.toString();
           }
-          console.log('[BOX点数表] 頭数を復元:', this.horseCount);
         }
 
         if (boxHistory.unitAmount && boxHistory.unitAmount > 0) {
@@ -661,7 +656,6 @@ const betTypes = groupedBetTypes;
               });
             }
           }
-          console.log('[BOX点数表] 金額を復元:', this.unitAmount);
         }
       } catch (error) {
         console.error('[BOX点数表] 履歴の復元に失敗:', error);
@@ -826,8 +820,7 @@ const betTypes = groupedBetTypes;
       const invalidTemplate = document.getElementById('invalid-card-content-template') as HTMLTemplateElement;
 
       if (!cardTemplate || !validTemplate || !invalidTemplate) {
-        console.error('Templates not found, falling back to innerHTML');
-        this.buildAllCardsLegacy(); // Fallback
+        console.error('Templates not found');
         return;
       }
 
@@ -907,93 +900,6 @@ const betTypes = groupedBetTypes;
       });
 
       // Single DOM operation
-      this.grid.replaceChildren(fragment);
-    }
-
-    /**
-     * フォールバック実装（innerHTML使用）
-     */
-    private buildAllCardsLegacy(): void {
-      if (!this.grid) return;
-
-      const betTypes = this.groupedBetTypes || [];
-      const fragment = document.createDocumentFragment();
-
-      betTypes.forEach((betType) => {
-        const minCount = getMinimumHorseCount(betType.id);
-        const maxCount = 18;
-        const isValid = this.horseCount >= minCount && this.horseCount < maxCount + 1;
-        const points = isValid ? calculateBoxPoints(betType.id, this.horseCount) : 0;
-        const totalAmount = points * this.unitAmount;
-
-            const card = document.createElement('div');
-            card.className = `bet-type-point-card relative flex flex-col p-4 rounded-lg border-2 ${
-              isValid
-                ? 'bg-white border-gray-300'
-                : 'bg-gray-100 border-gray-200 opacity-60'
-            }`;
-            card.setAttribute('data-bet-type-id', betType.id);
-
-            const escapeHtml = (str: string | number): string => {
-              const text = String(str);
-              const map: { [key: string]: string } = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;',
-              };
-              return text.replace(/[&<>"']/g, (m) => map[m]);
-            };
-
-            const descriptionHtml = betType.description
-              ? betType.description.split('\n').map(line => `<div class="mb-1">${escapeHtml(line)}</div>`).join('')
-              : '';
-
-            card.innerHTML = `
-              <div class="flex-1">
-                <div class="bet-type-name text-lg font-bold text-gray-800 mb-2">
-                  ${escapeHtml(betType.displayName)}
-                </div>
-                ${isValid ? `
-                  <div class="points-amount-row flex items-end justify-between mb-2">
-                    <div class="points-display pl-2">
-                      <div class="text-sm text-gray-600">点数</div>
-                      <div class="text-2xl font-bold text-blue-600">${escapeHtml(points)}点</div>
-                    </div>
-                    <div class="amount-display text-right pr-2">
-                      <div class="text-xs text-gray-600 mb-1">合計金額</div>
-                      <div class="text-lg font-semibold text-green-600">
-                        ${escapeHtml(formatYenAmount(totalAmount))}
-                      </div>
-                    </div>
-                  </div>
-                  <div class="calculation-display mb-2">
-                    <div class="text-xs text-gray-500">
-                      ${escapeHtml(this.horseCount)}頭のBOX買い
-                    </div>
-                  </div>
-                ` : `
-                  <div class="invalid-message text-sm text-gray-500">
-                    最小${escapeHtml(minCount)}頭以上必要
-                  </div>
-                `}
-              </div>
-              ${betType.description ? `
-                 <div class="bet-type-description border-t border-gray-200 text-xs text-blue-600 leading-relaxed ${
-                   betType.id === 'wakuren'
-                     ? 'mt-2 pt-2'
-                     : 'mt-1 pt-1 md:mt-1 md:pt-1'
-                 }">
-                  ${descriptionHtml}
-                </div>
-              ` : ''}
-            `;
-
-        fragment.appendChild(card);
-      });
-
-      // replaceChildren()を使用（innerHTMLより高速）
       this.grid.replaceChildren(fragment);
     }
 

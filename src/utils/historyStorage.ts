@@ -201,7 +201,6 @@ class CircularHistoryBuffer {
       const legacyHistory: CalculationHistory[] = JSON.parse(legacyData);
       if (!Array.isArray(legacyHistory)) return;
 
-      console.log(`Migrating ${legacyHistory.length} legacy history entries...`);
 
       // Create new buffer
       const buffer = new CircularHistoryBuffer();
@@ -214,7 +213,6 @@ class CircularHistoryBuffer {
       // Remove legacy data
       localStorage.removeItem(STORAGE_KEY);
 
-      console.log('Migration complete');
     } catch (error) {
       console.error('Failed to migrate legacy history:', error);
     }

@@ -675,7 +675,6 @@ const frameColors = [
 
       try {
         historyManager.scheduleSave(history);
-        console.log('[フォーメーション] 履歴を保存スケジュール:', history);
       } catch (error) {
         console.error('[フォーメーション] 履歴の保存に失敗:', error);
       }
@@ -685,18 +684,14 @@ const frameColors = [
       try {
         const history = getHistory();
         if (history.length === 0) {
-          console.log('[フォーメーション] 履歴がありません');
           return;
         }
 
         // 最新のフォーメーションの履歴を取得
         const formationHistory = history.find(h => h.type === 'formation');
         if (!formationHistory || !formationHistory.selections) {
-          console.log('[フォーメーション] フォーメーションの履歴がありません');
           return;
         }
-
-        console.log('[フォーメーション] 履歴を復元:', formationHistory);
 
         // Mapを復元（配列の場合はMapに変換）
         let selectionsMap: Map<number, number[]>;
@@ -705,7 +700,6 @@ const frameColors = [
         } else if (formationHistory.selections instanceof Map) {
           selectionsMap = formationHistory.selections;
         } else {
-          console.log('[フォーメーション] 選択データの形式が不正です');
           return;
         }
 
@@ -718,10 +712,7 @@ const frameColors = [
         // 金額を復元
         if (formationHistory.unitAmount && formationHistory.unitAmount > 0) {
           this.unitAmount = formationHistory.unitAmount;
-          console.log('[フォーメーション] 金額を復元:', this.unitAmount);
         }
-
-        console.log('[フォーメーション] 選択を復元:', Array.from(this.selections.entries()));
 
         // UIを更新
         this.updateCheckboxes();

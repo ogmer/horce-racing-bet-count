@@ -78,23 +78,6 @@ export const PRESET_AMOUNTS = [100, 200, 500, 1000] as const;
 // デフォルト金額
 export const DEFAULT_AMOUNT = 100;
 
-/**
- * HTMLエスケープ関数（XSS対策）
- * @param str エスケープする文字列
- * @returns エスケープされた文字列
- */
-export function escapeHtml(str: string | number): string {
-  const text = String(str);
-  const map: { [key: string]: string } = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m]);
-}
-
 export function formatYenAmount(amount: number): string {
   if (amount === 0) {
     return "0円";
