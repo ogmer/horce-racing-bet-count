@@ -9,7 +9,9 @@
       "Bash(bun run dev)",
       "Bash(timeout /t 5)",
       "Bash(bun run build:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)"
     ]
   }
 }
