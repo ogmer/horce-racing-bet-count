@@ -53,7 +53,7 @@ const { className = '' } = Astro.props;
   <div class="reset-button-container mt-8 text-center">
     <button
       type="button"
-      id="reset-all-data-button"
+      onclick="if(confirm('すべての選択とキャッシュをリセットしますか？\\nこの操作は取り消せません。')){localStorage.removeItem('horse-racing-calc-history');window.location.reload();}"
       class="reset-button px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border-2 border-red-300 rounded-lg hover:bg-red-100 hover:border-red-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
       title="すべての選択とキャッシュをリセット"
     >
@@ -64,51 +64,6 @@ const { className = '' } = Astro.props;
     </button>
   </div>
 </div>
-
-<script>
-  /**
-   * すべてのデータをリセットする
-   */
-  function resetAllData(): void {
-    // 確認ダイアログ
-    if (!confirm('すべての選択とキャッシュをリセットしますか？\nこの操作は取り消せません。')) {
-      return;
-    }
-
-    try {
-      // localStorageから履歴を削除
-      const STORAGE_KEY = 'horse-racing-calc-history';
-      localStorage.removeItem(STORAGE_KEY);
-
-      // 各コンポーネントにリセットイベントを送信
-      const resetEvent = new CustomEvent('resetAllData', {
-        bubbles: true,
-        detail: { timestamp: Date.now() }
-      });
-      document.dispatchEvent(resetEvent);
-
-      // ページをリロードして完全にリセット
-      window.location.reload();
-    } catch (error) {
-      console.error('リセットに失敗しました:', error);
-      alert('リセットに失敗しました。ページを手動でリロードしてください。');
-    }
-  }
-
-  // リセットボタンのイベントリスナーを設定
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initResetButton);
-  } else {
-    initResetButton();
-  }
-
-  function initResetButton(): void {
-    const resetButton = document.getElementById('reset-all-data-button');
-    if (resetButton) {
-      resetButton.addEventListener('click', resetAllData);
-    }
-  }
-</script>
 
 <style>
   .bet-calculator-app {
