@@ -2,9 +2,16 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-# Crawl-delay
+# Crawl-delay for polite crawling
 Crawl-delay: 1
 
-# Sitemap
+# Sitemap location
 Sitemap: https://horce-racing-bet-count.vercel.app/sitemap-index.xml
+
+# Additional settings for better crawling
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
 

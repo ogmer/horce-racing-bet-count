@@ -18,7 +18,7 @@ const { className = '' } = Astro.props;
     <h1 class="text-4xl font-bold text-gray-800 mb-2">
       競馬点数計算機
     </h1>
-    <p class="text-gray-600 text-lg" role="doc-subtitle">
+    <p class="text-gray-600 text-lg">
       馬券種別と頭数を選択して、自動で点数と合計金額を計算します
     </p>
   </header>
@@ -31,7 +31,7 @@ const { className = '' } = Astro.props;
       <PointsTableTabs
         className="w-full"
         horseCount={1}
-          unitAmount={DEFAULT_AMOUNT}
+        unitAmount={DEFAULT_AMOUNT}
       />
     </article>
   </main>

@@ -7,12 +7,18 @@ import '../styles/global.css';
 <html lang="ja">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 		<meta name="description" content="競馬のBOX買いの点数と合計金額を自動計算するツール。単勝、複勝、馬連、馬単、ワイド、3連複、3連単の点数を簡単に計算できます。フォーメーションやWIN5にも対応。" />
-		<meta name="keywords" content="競馬,点数計算,BOX買い,馬券,計算機,競馬予想,フォーメーション,WIN5,3連単,3連複,馬連,馬単,ワイド,早見表" />
+		<meta name="keywords" content="競馬,点数計算,BOX買い,馬券,計算機,競馬予想,フォーメーション,WIN5,3連単,3連複,馬連,馬単,ワイド,早見表,競馬ツール,無料" />
 		<meta name="author" content="競馬点数計算機" />
 		<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
 		<meta name="google-site-verification" content="QnUsOtyQqqGQspitKoNedHKpBusxYT0S5xXnYFT-8u8" />
+		<meta name="theme-color" content="#3B82F6" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+		<meta name="apple-mobile-web-app-title" content="競馬点数計算" />
+		<meta name="format-detection" content="telephone=no" />
 		<link rel="canonical" href={Astro.url.href} />
 
 		<!-- Open Graph / Facebook -->
@@ -166,6 +172,45 @@ import '../styles/global.css';
 			],
 			"totalTime": "PT1M"
 		})} />
+
+		<!-- 構造化データ (JSON-LD) - Organization -->
+		<script type="application/ld+json" set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "Organization",
+			"name": "競馬点数計算機",
+			"url": Astro.url.origin,
+			"logo": new URL('/og-image.svg', Astro.url).href,
+			"description": "競馬の馬券点数を簡単に計算できる無料ツールを提供しています。",
+			"contactPoint": {
+				"@type": "ContactPoint",
+				"email": "ogmer.net@gmail.com",
+				"contactType": "Customer Service"
+			}
+		})} />
+
+		<!-- 構造化データ (JSON-LD) - BreadcrumbList -->
+		<script type="application/ld+json" set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "BreadcrumbList",
+			"itemListElement": [
+				{
+					"@type": "ListItem",
+					"position": 1,
+					"name": "ホーム",
+					"item": Astro.url.origin
+				},
+				{
+					"@type": "ListItem",
+					"position": 2,
+					"name": "競馬点数計算機",
+					"item": Astro.url.href
+				}
+			]
+		})} />
+
+		<!-- プリコネクト・DNSプリフェッチ -->
+		<link rel="preconnect" href="https://vercel.live" crossorigin />
+		<link rel="dns-prefetch" href="https://vercel.live" />
 	</head>
 	<body style="background-color: #ffffff; color: #000000;">
 		<slot />

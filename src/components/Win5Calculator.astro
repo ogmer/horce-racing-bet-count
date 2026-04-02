@@ -334,12 +334,12 @@ const { className = '', unitAmount = 100 } = Astro.props;
   /* レスポンシブ対応 */
   @media (max-width: 768px) {
     .win5-calculator h2 {
-      font-size: 1.25rem;
-      margin-bottom: 0.75rem;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
     }
 
     .total-calculation {
-      padding: 0.75rem;
+      padding: 1rem;
     }
 
     .total-calculation .text-lg {
@@ -349,11 +349,13 @@ const { className = '', unitAmount = 100 } = Astro.props;
 
   @media (max-width: 640px) {
     .win5-calculator h2 {
-      font-size: 1.125rem;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
     }
 
     .win5-info {
       padding: 0.75rem;
+      margin-bottom: 1rem;
       font-size: 0.8125rem;
     }
 
@@ -366,16 +368,48 @@ const { className = '', unitAmount = 100 } = Astro.props;
     }
 
     .race-select {
-      font-size: 0.8125rem;
+      font-size: 0.875rem;
       padding: 0.5rem 0.75rem;
+      min-height: 44px;
     }
 
     .race-item .race-points {
       font-size: 1rem;
     }
 
+    .total-calculation {
+      padding: 0.75rem;
+    }
+
+    .total-calculation .text-sm,
+    .total-calculation .text-xs {
+      font-size: 0.75rem;
+    }
+
+    .total-calculation .text-xl {
+      font-size: 1rem;
+    }
+
     .total-calculation .text-3xl {
+      font-size: 1.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .win5-calculator h2 {
       font-size: 1.25rem;
+    }
+
+    .win5-info {
+      padding: 0.625rem;
+    }
+
+    .race-item {
+      padding: 0.625rem;
+    }
+
+    .total-calculation {
+      padding: 0.625rem;
     }
   }
 </style>
