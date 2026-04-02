@@ -52,10 +52,11 @@ const { className = '' } = Astro.props;
   <!-- リセットボタン -->
   <div class="reset-button-container mt-8 text-center">
     <button
+      id="reset-all-button"
       type="button"
-      onclick="if(confirm('すべての選択とキャッシュをリセットしますか？\\nこの操作は取り消せません。')){localStorage.removeItem('horse-racing-calc-history');window.location.reload();}"
       class="reset-button px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border-2 border-red-300 rounded-lg hover:bg-red-100 hover:border-red-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
       title="すべての選択とキャッシュをリセット"
+      aria-label="すべての選択とキャッシュをリセット"
     >
       <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -64,6 +65,59 @@ const { className = '' } = Astro.props;
     </button>
   </div>
 </div>
+
+<script>
+  const RESET_BUTTON_ID = 'reset-all-button';
+
+  const STORAGE_KEY = 'horse-racing-calc-history';
+  const METADATA_KEY = 'horse-racing-calc-history-meta';
+  const MAX_HISTORY_COUNT = 50;
+
+  const clearCalculatorStorage = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY); // legacy array-based
+      localStorage.removeItem(METADATA_KEY); // circular buffer metadata
+
+      for (let i = 0; i < MAX_HISTORY_COUNT; i++) {
+        localStorage.removeItem(`${STORAGE_KEY}_${i}`); // circular buffer entries
+      }
+    } catch (error) {
+      console.error('リセット処理に失敗しました:', error);
+    }
+  };
+
+  const handleReset = () => {
+    const ok = window.confirm(
+      'すべての選択とキャッシュをリセットしますか？\nこの操作は取り消せません。'
+    );
+    if (!ok) return;
+
+    clearCalculatorStorage();
+    window.location.reload();
+  };
+
+  const setupResetButton = () => {
+    const resetButton = document.getElementById(RESET_BUTTON_ID);
+    if (!(resetButton instanceof HTMLButtonElement)) return;
+
+    resetButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      handleReset();
+    });
+
+    resetButton.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      handleReset();
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupResetButton, { once: true });
+  } else {
+    setupResetButton();
+  }
+</script>
 
 <style>
   .bet-calculator-app {
