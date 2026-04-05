@@ -70,6 +70,13 @@ export const BET_TYPES: BetType[] = [
     points: 1,
     description: "1着・2着・3着の馬番を順序通りに当てる",
   },
+  {
+    id: "triple_umatan",
+    name: "triple_umatan",
+    displayName: "トリプル馬単",
+    points: 1,
+    description: "3レースそれぞれの1着を当てる",
+  },
 ];
 
 // プリセット金額の定義
@@ -309,6 +316,12 @@ export function calculateBoxPoints(
       result = permutation(horseCount, 3);
       break;
 
+    case "triple_umatan":
+      // 3レースの1着を当てる（各レースで同じ馬を選べる）
+      // ボックス: n^3
+      result = Math.pow(horseCount, 3);
+      break;
+
     default:
       result = 0;
   }
@@ -327,6 +340,7 @@ export function getMinimumHorseCount(betTypeId: string): number {
   switch (betTypeId) {
     case "tansho":
     case "fukusho":
+    case "triple_umatan":
       return 1;
 
     case "wakuren":

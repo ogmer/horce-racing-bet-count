@@ -5,12 +5,13 @@
 
 export interface CalculationHistory {
   id: string;
-  type: 'box' | 'formation' | 'win5';
+  type: 'box' | 'formation' | 'win5' | 'triple_umatan';
   timestamp: number;
   horseCount?: number;
   unitAmount: number;
   selections?: Array<[number, number[]]>;
   raceHorseCounts?: number[];
+  buyType?: string;
   results?: {
     betTypeId: string;
     points: number;

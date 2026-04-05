@@ -18,7 +18,9 @@
       "WebSearch",
       "Bash(node --version)",
       "Bash(npm install:*)",
-      "Bash(del \"C:\\\\Users\\\\mrtor\\\\OneDrive\\\\ドキュメント\\\\horce-racing-bet-count\\\\public\\\\sitemap.xml\")"
+      "Bash(del \"C:\\\\Users\\\\mrtor\\\\OneDrive\\\\ドキュメント\\\\horce-racing-bet-count\\\\public\\\\sitemap.xml\")",
+      "WebFetch(domain:www.nankankeiba.com)",
+      "Bash(wc:*)"
     ]
   }
 }

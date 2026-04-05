@@ -1,0 +1,1132 @@
+---
+/**
+ * トリプル馬単計算コンポーネント
+ * 3レースそれぞれの馬単（1着・2着を順序通り）を当てる馬券の点数を計算する
+ * 16頭立て、1点50円で計算
+ */
+import { formatYenAmount } from '../utils/betCalculations';
+
+export interface Props {
+  unitAmount?: number;
+  className?: string;
+}
+
+const {
+  unitAmount = 50,
+  className = ''
+} = Astro.props;
+
+const MAX_HORSES = 16;
+/** ボックス：選択できる頭数（2〜16） */
+const BOX_HORSE_COUNT_MIN = 2;
+const BOX_HORSE_COUNT_MAX = 16;
+---
+
+<div class={`triple-umatan-calculator ${className}`}>
+  <h2 class="text-2xl font-bold text-gray-800 mb-4">トリプル馬単計算</h2>
+  <p class="text-sm text-gray-600 mb-4">南関東4競馬場で、3レースそれぞれの馬単（1着・2着）を当てる馬券です</p>
+
+  <div class="triple-umatan-section p-4 bg-white border-2 border-gray-200 rounded-lg">
+    <!-- 3レースの選択エリア（3列並び） -->
+    <div class="races-grid grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      {Array.from({ length: 3 }, (_, raceIndex) => {
+        const race = raceIndex + 1;
+        return (
+          <div class="race-column" data-race={race}>
+            <div class="race-section flex flex-col p-4 bg-gray-50 border-2 border-gray-300 rounded-lg">
+              <h3 class="text-lg font-bold text-gray-800 mb-3 text-center">{race}レース目</h3>
+
+              <!-- 買い方プルダウン（各レース個別） -->
+              <div class="buy-type-select-wrapper mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">買い方</label>
+                <select
+                  class="buy-type-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                  data-race={race}
+                >
+                  <option value="formation">フォーメーション</option>
+                  <option value="box">ボックス</option>
+                  <option value="nagashi">流し</option>
+                  <option value="single">シングル</option>
+                </select>
+              </div>
+
+              <!-- 流し：種類選択 -->
+              <div class="nagashi-buy-ui hidden w-full mb-4" data-nagashi-ui={race}>
+                <div class="nagashi-type-section mb-3">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">流しの種類</label>
+                  <select
+                    class="nagashi-type-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                    data-race={race}
+                  >
+                    <option value="first">1着流し</option>
+                    <option value="second">2着流し</option>
+                  </select>
+                </div>
+
+                <!-- 1着流し：軸馬選択 -->
+                <div class="nagashi-first-axis hidden" data-nagashi-first-axis={race}>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">1着（軸馬）</label>
+                  <select
+                    class="nagashi-axis-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                    data-race={race}
+                    data-nagashi-type="first"
+                  >
+                    <option value="0">-</option>
+                    {Array.from({ length: MAX_HORSES }, (_, i) => {
+                      const num = i + 1;
+                      return <option value={num}>{num}</option>;
+                    })}
+                  </select>
+                </div>
+
+                <!-- 2着流し：軸馬選択 -->
+                <div class="nagashi-second-axis hidden" data-nagashi-second-axis={race}>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">2着（軸馬）</label>
+                  <select
+                    class="nagashi-axis-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                    data-race={race}
+                    data-nagashi-type="second"
+                  >
+                    <option value="0">-</option>
+                    {Array.from({ length: MAX_HORSES }, (_, i) => {
+                      const num = i + 1;
+                      return <option value={num}>{num}</option>;
+                    })}
+                  </select>
+                </div>
+              </div>
+
+              <!-- シングル：組数選択 -->
+              <div class="single-buy-ui hidden w-full" data-single-ui={race}>
+                <div class="single-section">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">組数</label>
+                  <select
+                    class="single-set-count-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                    data-race={race}
+                  >
+                    <option value="1">1組</option>
+                    <option value="2">2組</option>
+                    <option value="3">3組</option>
+                    <option value="4">4組</option>
+                    <option value="5">5組</option>
+                    <option value="6">6組</option>
+                    <option value="7">7組</option>
+                    <option value="8">8組</option>
+                    <option value="9">9組</option>
+                    <option value="10">10組</option>
+                    <option value="11">11組</option>
+                    <option value="12">12組</option>
+                    <option value="13">13組</option>
+                    <option value="14">14組</option>
+                    <option value="15">15組</option>
+                    <option value="16">16組</option>
+                    <option value="17">17組</option>
+                    <option value="18">18組</option>
+                    <option value="19">19組</option>
+                    <option value="20">20組</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- フォーメーション／流し：1着・2着 -->
+              <div class="formation-buy-ui w-full" data-formation-ui={race}>
+                <div class="umatan-positions grid grid-cols-2 gap-3 md:gap-4 w-full">
+                  <!-- 1着選択 -->
+                  <div class="position-section mb-0 min-w-0">
+                    <div class="position-header flex flex-col gap-2 mb-2">
+                      <h4 class="text-sm font-semibold text-gray-700">1着</h4>
+                      <div class="position-controls flex gap-1">
+                        <button
+                          type="button"
+                          class="select-position-button px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-xs"
+                          data-race={race}
+                          data-position="1"
+                        >
+                          全
+                        </button>
+                        <button
+                          type="button"
+                          class="clear-position-button px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-xs"
+                          data-race={race}
+                          data-position="1"
+                        >
+                          消
+                        </button>
+                      </div>
+                    </div>
+                    <div class="horses-grid grid grid-cols-1 gap-2">
+                      {Array.from({ length: MAX_HORSES }, (_, horseIndex) => {
+                        const horseNum = horseIndex + 1;
+                        return (
+                          <label class="horse-item flex flex-col items-center gap-1 p-2 bg-white border border-gray-300 rounded hover:bg-blue-50 cursor-pointer transition-colors">
+                            <input
+                              type="checkbox"
+                              class="horse-checkbox cursor-pointer"
+                              data-horse-num={horseNum}
+                              data-race={race}
+                              data-position="1"
+                            />
+                            <span class="horse-number text-xs font-medium text-gray-700">{horseNum}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <!-- 2着選択 -->
+                  <div class="position-section mb-0 min-w-0">
+                    <div class="position-header flex flex-col gap-2 mb-2">
+                      <h4 class="text-sm font-semibold text-gray-700">2着</h4>
+                      <div class="position-controls flex gap-1">
+                        <button
+                          type="button"
+                          class="select-position-button px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-xs"
+                          data-race={race}
+                          data-position="2"
+                        >
+                          全
+                        </button>
+                        <button
+                          type="button"
+                          class="clear-position-button px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-xs"
+                          data-race={race}
+                          data-position="2"
+                        >
+                          消
+                        </button>
+                      </div>
+                    </div>
+                    <div class="horses-grid grid grid-cols-1 gap-2">
+                      {Array.from({ length: MAX_HORSES }, (_, horseIndex) => {
+                        const horseNum = horseIndex + 1;
+                        return (
+                          <label class="horse-item flex flex-col items-center gap-1 p-2 bg-white border border-gray-300 rounded hover:bg-blue-50 cursor-pointer transition-colors">
+                            <input
+                              type="checkbox"
+                              class="horse-checkbox cursor-pointer"
+                              data-horse-num={horseNum}
+                              data-race={race}
+                              data-position="2"
+                            />
+                            <span class="horse-number text-xs font-medium text-gray-700">{horseNum}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ボックス：馬番選択 -->
+              <div class="box-buy-ui hidden w-full" data-box-ui={race}>
+                <div class="box-section">
+                  <!-- 全選択・全消去ボタン -->
+                  <div class="position-controls flex gap-1 mb-3">
+                    <button
+                      type="button"
+                      class="select-box-all-button px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-xs"
+                      data-race={race}
+                    >
+                      全
+                    </button>
+                    <button
+                      type="button"
+                      class="clear-box-all-button px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-xs"
+                      data-race={race}
+                    >
+                      消
+                    </button>
+                  </div>
+
+                  <!-- テーブル形式 -->
+                  <div class="box-table w-full border border-gray-300 rounded-lg overflow-hidden">
+                    <!-- ヘッダー -->
+                    <div class="box-table-header grid grid-cols-2 bg-gray-700 text-white">
+                      <div class="px-3 py-2 text-center text-sm font-semibold border-r border-gray-500">馬番</div>
+                      <div class="px-3 py-2 text-center text-sm font-semibold">BOX</div>
+                    </div>
+                    <!-- ボディ -->
+                    <div class="box-table-body">
+                      {Array.from({ length: MAX_HORSES }, (_, horseIndex) => {
+                        const horseNum = horseIndex + 1;
+                        return (
+                          <label class="box-table-row grid grid-cols-2 border-b border-gray-200 last:border-b-0 hover:bg-blue-50 cursor-pointer transition-colors">
+                            <div class="px-3 py-2 text-center text-sm font-medium text-gray-700 border-r border-gray-200 bg-gray-50">
+                              {horseNum}
+                            </div>
+                            <div class="px-3 py-2 flex items-center justify-center bg-white">
+                              <input
+                                type="checkbox"
+                                class="box-horse-checkbox cursor-pointer"
+                                data-horse-num={horseNum}
+                                data-race={race}
+                              />
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 各レースの計算結果 -->
+              <div class="race-result p-3 bg-white border border-blue-200 rounded-lg mt-3">
+                <div class="text-sm text-gray-700 font-medium mb-1">点数</div>
+                <div class="race-points text-lg font-bold text-blue-600" data-race-result={race}>
+                  0点
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <!-- 合計計算結果 -->
+    <div class="total-results mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg">
+      <div class="text-center">
+        <div class="text-lg text-gray-700 font-medium mb-2">合計</div>
+        <div class="calculation-formula text-base text-gray-700 mb-3 font-semibold" data-formula>
+          0点 × 0点 × 0点 × 50円 = 0円
+        </div>
+        <div class="total-amount text-3xl font-bold text-green-600" data-total-amount>
+          合計金額: 0円
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { formatYenAmount, calculateBoxPoints } from '../utils/betCalculations';
+  import {
+    historyManager,
+    generateHistoryId,
+    type CalculationHistory
+  } from '../utils/historyStorage';
+
+  const MAX_HORSES = 16;
+  /**
+   * 履歴保存用のストレージキー定義：
+   * - フォーメーション/流し: レース番号 × 10 + 着順（例: 11, 12, 21, 22...）
+   * - ボックス: 100 + レース番号（例: 101, 102, 103）
+   * - シングル: 200 + レース番号（例: 201, 202, 203）
+   * - 流しタイプ: 300 + レース番号（例: 301, 302, 303）値は0=first, 1=second
+   * - 流し軸馬: 400 + レース番号（例: 401, 402, 403）
+   */
+  const BOX_SELECTION_STORAGE_KEY = 100;
+  const SINGLE_COUNT_STORAGE_KEY = 200;
+  const NAGASHI_TYPE_STORAGE_KEY = 300;
+  const NAGASHI_AXIS_STORAGE_KEY = 400;
+  type BuyType = 'formation' | 'box' | 'nagashi' | 'single';
+  type NagashiType = 'first' | 'second';
+
+  class TripleUmatanCalculator {
+    private container: HTMLElement;
+    private unitAmount: number = 50;
+    // Map<raceNumber, Map<position, Set<horseNum>>>
+    private selections: Map<number, Map<number, Set<number>>> = new Map();
+    // Map<raceNumber, BuyType>
+    private buyTypes: Map<number, BuyType> = new Map();
+    // ボックス：各レースで選択した馬番のSet
+    private boxSelections: Map<number, Set<number>> = new Map();
+    // 流し：各レースの流しの種類（1着流し or 2着流し）
+    private nagashiTypes: Map<number, NagashiType> = new Map();
+    // 流し：各レースの軸馬（0 = 未選択）
+    private nagashiAxisHorses: Map<number, number> = new Map();
+    // シングル：各レースの組数
+    private singleSetCounts: Map<number, number> = new Map();
+
+    constructor(container: HTMLElement) {
+      this.container = container;
+      this.init();
+    }
+
+    private init(): void {
+      // 各レースの選択と買い方を初期化
+      for (let race = 1; race <= 3; race++) {
+        const positionMap = new Map<number, Set<number>>();
+        positionMap.set(1, new Set()); // 1着
+        positionMap.set(2, new Set()); // 2着
+        this.selections.set(race, positionMap);
+        this.buyTypes.set(race, 'formation');
+        this.boxSelections.set(race, new Set());
+        this.nagashiTypes.set(race, 'first');
+        this.nagashiAxisHorses.set(race, 0);
+        this.singleSetCounts.set(race, 1);
+      }
+
+      // 画面上の買い方セレクトの値を反映（初期表示と一致させる）
+      for (let race = 1; race <= 3; race++) {
+        const select = this.container.querySelector(
+          `select.buy-type-select[data-race="${race}"]`
+        ) as HTMLSelectElement | null;
+        if (select && this.isBuyType(select.value)) {
+          this.buyTypes.set(race, select.value);
+        }
+      }
+
+      // 金額変更イベントをリッスン
+      document.addEventListener('amountChange', (event: any) => {
+        if (event.detail && typeof event.detail.amount === 'number') {
+          this.unitAmount = event.detail.amount;
+          this.updateAllCalculations();
+        }
+      });
+
+      // チェックボックスとセレクトボックス - イベント委譲
+      this.container.addEventListener('change', (event) => {
+        const target = event.target as HTMLElement;
+        if (target.classList.contains('horse-checkbox')) {
+          const checkbox = target as HTMLInputElement;
+          const race = parseInt(checkbox.getAttribute('data-race') || '0');
+          const position = parseInt(checkbox.getAttribute('data-position') || '0');
+          const horseNum = parseInt(checkbox.getAttribute('data-horse-num') || '0');
+          this.toggleHorse(race, position, horseNum, checkbox.checked);
+        }
+        if (target.classList.contains('box-horse-checkbox')) {
+          const checkbox = target as HTMLInputElement;
+          const race = parseInt(checkbox.getAttribute('data-race') || '0');
+          const horseNum = parseInt(checkbox.getAttribute('data-horse-num') || '0');
+          this.toggleBoxHorse(race, horseNum, checkbox.checked);
+        }
+        // 流し：種類選択
+        if (target.classList.contains('nagashi-type-select')) {
+          const select = target as HTMLSelectElement;
+          const race = parseInt(select.getAttribute('data-race') || '0');
+          const nagashiType = select.value as NagashiType;
+          this.changeNagashiType(race, nagashiType);
+        }
+        // 流し：軸馬選択
+        if (target.classList.contains('nagashi-axis-select')) {
+          const select = target as HTMLSelectElement;
+          const race = parseInt(select.getAttribute('data-race') || '0');
+          const horseNum = parseInt(select.value, 10);
+          this.setNagashiAxis(race, horseNum);
+        }
+        // シングル：組数選択
+        if (target.classList.contains('single-set-count-select')) {
+          const select = target as HTMLSelectElement;
+          const race = parseInt(select.getAttribute('data-race') || '0');
+          const count = parseInt(select.value, 10);
+          this.changeSingleSetCount(race, count);
+        }
+        // 買い方セレクトボックス
+        if (target.classList.contains('buy-type-select')) {
+          const select = target as HTMLSelectElement;
+          const race = parseInt(select.getAttribute('data-race') || '0');
+          const buyType = select.value as BuyType;
+          this.changeBuyType(race, buyType);
+        }
+      });
+
+      // ポジション選択ボタン
+      const selectPositionButtons = this.container.querySelectorAll('.select-position-button');
+      selectPositionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const race = parseInt(button.getAttribute('data-race') || '0');
+          const position = parseInt(button.getAttribute('data-position') || '0');
+          this.selectPosition(race, position);
+        });
+      });
+
+      // ポジションクリアボタン
+      const clearPositionButtons = this.container.querySelectorAll('.clear-position-button');
+      clearPositionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const race = parseInt(button.getAttribute('data-race') || '0');
+          const position = parseInt(button.getAttribute('data-position') || '0');
+          this.clearPosition(race, position);
+        });
+      });
+
+      // ボックス全選択ボタン
+      const selectBoxAllButtons = this.container.querySelectorAll('.select-box-all-button');
+      selectBoxAllButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const race = parseInt(button.getAttribute('data-race') || '0');
+          this.selectAllBoxHorses(race);
+        });
+      });
+
+      // ボックス全消去ボタン
+      const clearBoxAllButtons = this.container.querySelectorAll('.clear-box-all-button');
+      clearBoxAllButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const race = parseInt(button.getAttribute('data-race') || '0');
+          this.clearAllBoxHorses(race);
+        });
+      });
+
+      for (let race = 1; race <= 3; race++) {
+        this.updateBuyTypePanel(race);
+      }
+
+      // 初期表示を更新
+      this.updateAllCalculations();
+    }
+
+    private updateBuyTypePanel(race: number): void {
+      const buyType = this.buyTypes.get(race) || 'formation';
+      const formationEl = this.container.querySelector(`[data-formation-ui="${race}"]`);
+      const boxEl = this.container.querySelector(`[data-box-ui="${race}"]`);
+      const nagashiEl = this.container.querySelector(`[data-nagashi-ui="${race}"]`);
+      const singleEl = this.container.querySelector(`[data-single-ui="${race}"]`);
+      if (!formationEl || !boxEl || !nagashiEl || !singleEl) return;
+
+      // すべて非表示にする
+      formationEl.classList.add('hidden');
+      boxEl.classList.add('hidden');
+      nagashiEl.classList.add('hidden');
+      singleEl.classList.add('hidden');
+
+      // 選択された買い方のみ表示
+      if (buyType === 'box') {
+        boxEl.classList.remove('hidden');
+        // ボックスに切り替えたときにチェックボックスの状態を復元
+        this.updateBoxCheckboxes(race);
+      } else if (buyType === 'nagashi') {
+        nagashiEl.classList.remove('hidden');
+        formationEl.classList.remove('hidden');
+        // 流しの軸馬選択UIを更新
+        this.updateNagashiAxisUI(race);
+      } else if (buyType === 'single') {
+        singleEl.classList.remove('hidden');
+      } else {
+        // formation
+        formationEl.classList.remove('hidden');
+        // フォーメーションに戻す時は2列表示に戻す
+        this.resetFormationUI(race);
+      }
+    }
+
+    private resetFormationUI(race: number): void {
+      const formationEl = this.container.querySelector(`[data-formation-ui="${race}"]`);
+      if (!formationEl) return;
+
+      // すべての着順セクションを表示
+      const positionSections = formationEl.querySelectorAll('.position-section');
+      positionSections.forEach((section: Element) => {
+        section.classList.remove('hidden');
+      });
+
+      // グリッドを2列に戻す
+      const umatanPositionsGrid = formationEl.querySelector('.umatan-positions');
+      if (umatanPositionsGrid) {
+        umatanPositionsGrid.classList.remove('grid-cols-1');
+        umatanPositionsGrid.classList.add('grid-cols-2');
+      }
+    }
+
+    private isBuyType(value: string): value is BuyType {
+      return value === 'formation' || value === 'box' || value === 'nagashi' || value === 'single';
+    }
+
+    private toggleHorse(race: number, position: number, horseNum: number, checked: boolean): void {
+      const raceSelections = this.selections.get(race);
+      if (!raceSelections) return;
+
+      const positionSelection = raceSelections.get(position);
+      if (!positionSelection) return;
+
+      if (checked) {
+        positionSelection.add(horseNum);
+      } else {
+        positionSelection.delete(horseNum);
+      }
+
+      this.updateAllCalculations();
+      this.saveToHistory();
+    }
+
+    private selectPosition(race: number, position: number): void {
+      const raceSelections = this.selections.get(race);
+      if (!raceSelections) return;
+
+      const positionSelection = raceSelections.get(position);
+      if (!positionSelection) return;
+
+      for (let num = 1; num <= MAX_HORSES; num++) {
+        positionSelection.add(num);
+      }
+
+      this.updateCheckboxes();
+      this.updateAllCalculations();
+      this.saveToHistory();
+    }
+
+    private clearPosition(race: number, position: number): void {
+      const raceSelections = this.selections.get(race);
+      if (!raceSelections) return;
+
+      const positionSelection = raceSelections.get(position);
+      if (!positionSelection) return;
+
+      positionSelection.clear();
+
+      this.updateCheckboxes();
+      this.updateAllCalculations();
+      this.saveToHistory();
+    }
+
+    private toggleBoxHorse(race: number, horseNum: number, checked: boolean): void {
+      const boxSelection = this.boxSelections.get(race);
+      if (!boxSelection) return;
+
+      if (checked) {
+        boxSelection.add(horseNum);
+      } else {
+        boxSelection.delete(horseNum);
+      }
+
+      this.updateAllCalculations();
+      this.saveToHistory();
+    }
+
+    private selectAllBoxHorses(race: number): void {
+      const boxSelection = this.boxSelections.get(race);
+      if (!boxSelection) return;
+
+      for (let num = 1; num <= MAX_HORSES; num++) {
+        boxSelection.add(num);
+      }
+
+      this.updateBoxCheckboxes(race);
+      this.updateAllCalculations();
+      this.saveToHistory();
+    }
+
+    private clearAllBoxHorses(race: number): void {
+      const boxSelection = this.boxSelections.get(race);
+      if (!boxSelection) return;
+
+      boxSelection.clear();
+
+      this.updateBoxCheckboxes(race);
+      this.updateAllCalculations();
+      this.saveToHistory();
+    }
+
+    private updateBoxCheckboxes(race: number): void {
+      const boxSelection = this.boxSelections.get(race);
+      if (!boxSelection) return;
+
+      const checkboxes = this.container.querySelectorAll(`.box-horse-checkbox[data-race="${race}"]`);
+      checkboxes.forEach(checkbox => {
+        const horseNum = parseInt(checkbox.getAttribute('data-horse-num') || '0');
+        (checkbox as HTMLInputElement).checked = boxSelection.has(horseNum);
+      });
+    }
+
+    private changeNagashiType(race: number, nagashiType: NagashiType): void {
+      this.nagashiTypes.set(race, nagashiType);
+      this.updateNagashiAxisUI(race);
+      this.updateAllCalculations();
+      this.saveToHistory();
+    }
+
+    private updateNagashiAxisUI(race: number): void {
+      const nagashiType = this.nagashiTypes.get(race) || 'first';
+      const firstAxisEl = this.container.querySelector(`[data-nagashi-first-axis="${race}"]`);
+      const secondAxisEl = this.container.querySelector(`[data-nagashi-second-axis="${race}"]`);
+      const formationEl = this.container.querySelector(`[data-formation-ui="${race}"]`);
+
+      if (!firstAxisEl || !secondAxisEl || !formationEl) return;
+
+      // フォーメーションUIの1着・2着セクションを取得
+      const firstPositionSections = formationEl.querySelectorAll(`[data-position="1"]`);
+      const secondPositionSections = formationEl.querySelectorAll(`[data-position="2"]`);
+      const umatanPositionsGrid = formationEl.querySelector('.umatan-positions');
+
+      if (nagashiType === 'first') {
+        // 1着流し: 軸馬選択を表示、2着のチェックボックスのみ表示
+        firstAxisEl.classList.remove('hidden');
+        secondAxisEl.classList.add('hidden');
+
+        // 1着セクションを非表示、2着セクションを表示
+        firstPositionSections.forEach((el: Element) => {
+          const parent = el.closest('.position-section');
+          if (parent) parent.classList.add('hidden');
+        });
+        secondPositionSections.forEach((el: Element) => {
+          const parent = el.closest('.position-section');
+          if (parent) parent.classList.remove('hidden');
+        });
+
+        // グリッドを1列に変更
+        if (umatanPositionsGrid) {
+          umatanPositionsGrid.classList.remove('grid-cols-2');
+          umatanPositionsGrid.classList.add('grid-cols-1');
+        }
+      } else {
+        // 2着流し: 軸馬選択を表示、1着のチェックボックスのみ表示
+        firstAxisEl.classList.add('hidden');
+        secondAxisEl.classList.remove('hidden');
+
+        // 2着セクションを非表示、1着セクションを表示
+        secondPositionSections.forEach((el: Element) => {
+          const parent = el.closest('.position-section');
+          if (parent) parent.classList.add('hidden');
+        });
+        firstPositionSections.forEach((el: Element) => {
+          const parent = el.closest('.position-section');
+          if (parent) parent.classList.remove('hidden');
+        });
+
+        // グリッドを1列に変更
+        if (umatanPositionsGrid) {
+          umatanPositionsGrid.classList.remove('grid-cols-2');
+          umatanPositionsGrid.classList.add('grid-cols-1');
+        }
+      }
+    }
+
+    private setNagashiAxis(race: number, horseNum: number): void {
+      this.nagashiAxisHorses.set(race, horseNum);
+      this.updateAllCalculations();
+      this.saveToHistory();
+    }
+
+    private changeSingleSetCount(race: number, count: number): void {
+      this.singleSetCounts.set(race, count);
+      this.updateAllCalculations();
+      this.saveToHistory();
+    }
+
+    private updateCheckboxes(): void {
+      const checkboxes = this.container.querySelectorAll('.horse-checkbox');
+      checkboxes.forEach(checkbox => {
+        const race = parseInt(checkbox.getAttribute('data-race') || '0');
+        const position = parseInt(checkbox.getAttribute('data-position') || '0');
+        const horseNum = parseInt(checkbox.getAttribute('data-horse-num') || '0');
+
+        const raceSelections = this.selections.get(race);
+        const positionSelection = raceSelections?.get(position);
+        (checkbox as HTMLInputElement).checked = positionSelection ? positionSelection.has(horseNum) : false;
+      });
+    }
+
+    private changeBuyType(race: number, buyType: BuyType): void {
+      this.buyTypes.set(race, buyType);
+      this.updateBuyTypePanel(race);
+      this.updateAllCalculations();
+      this.saveToHistory();
+    }
+
+    private updateAllCalculations(): void {
+      const racePoints: number[] = [];
+
+      // 各レースの点数を計算
+      for (let race = 1; race <= 3; race++) {
+        const points = this.calculateRacePoints(race);
+        racePoints.push(points);
+
+        // 各レースの結果を表示
+        const raceResultEl = this.container.querySelector(`[data-race-result="${race}"]`);
+
+        if (raceResultEl) {
+          raceResultEl.textContent = `${points}点`;
+        }
+      }
+
+      const totalPoints = racePoints[0] * racePoints[1] * racePoints[2];
+      const totalAmount = totalPoints * this.unitAmount;
+
+      const formulaEl = this.container.querySelector('[data-formula]');
+      if (formulaEl) {
+        formulaEl.textContent = `${racePoints[0]}点 × ${racePoints[1]}点 × ${racePoints[2]}点 × ${this.unitAmount}円 = ${formatYenAmount(totalAmount)}`;
+      }
+
+      // 合計金額を表示
+      const totalAmountEl = this.container.querySelector('[data-total-amount]');
+      if (totalAmountEl) {
+        totalAmountEl.textContent = `合計金額: ${formatYenAmount(totalAmount)}`;
+      }
+    }
+
+    private calculateUmatanPoints(first: Set<number>, second: Set<number>): number {
+      // 馬単の点数: 1着 × 2着（同じ馬は除外）
+      let count = 0;
+      first.forEach(f => {
+        second.forEach(s => {
+          if (f !== s) {
+            count++;
+          }
+        });
+      });
+      return count;
+    }
+
+    private calculateRacePoints(race: number): number {
+      const buyType = this.buyTypes.get(race) || 'formation';
+
+      if (buyType === 'box') {
+        const boxSelection = this.boxSelections.get(race);
+        if (!boxSelection || boxSelection.size < 2) {
+          return 0;
+        }
+        // ボックス馬単: n頭から2頭を順序付きで選ぶ = n × (n - 1)
+        return calculateBoxPoints('umatan', boxSelection.size);
+      }
+
+      const raceSelections = this.selections.get(race);
+      if (!raceSelections) return 0;
+
+      const first = raceSelections.get(1) || new Set();
+      const second = raceSelections.get(2) || new Set();
+
+      switch (buyType) {
+        case 'formation': {
+          // フォーメーション: 1着 × 2着（同じ馬を除外）
+          return this.calculateUmatanPoints(first, second);
+        }
+
+        case 'nagashi': {
+          const nagashiType = this.nagashiTypes.get(race) || 'first';
+          const axisHorse = this.nagashiAxisHorses.get(race) || 0;
+
+          if (axisHorse === 0) {
+            return 0;
+          }
+
+          if (nagashiType === 'first') {
+            // 1着流し: 軸馬が1着、2着にチェックボックスで選んだ馬
+            if (second.size === 0) {
+              return 0;
+            }
+            let count = 0;
+            second.forEach(s => {
+              if (s !== axisHorse) count++;
+            });
+            return count;
+          } else {
+            // 2着流し: 軸馬が2着、1着にチェックボックスで選んだ馬
+            if (first.size === 0) {
+              return 0;
+            }
+            let count = 0;
+            first.forEach(f => {
+              if (f !== axisHorse) count++;
+            });
+            return count;
+          }
+        }
+
+        case 'single': {
+          // シングル: 組数がそのまま点数
+          return this.singleSetCounts.get(race) || 1;
+        }
+
+        default:
+          return 0;
+      }
+    }
+
+    private saveToHistory(): void {
+      let hasSelection = false;
+      for (let race = 1; race <= 3; race++) {
+        const buyType = this.buyTypes.get(race);
+        if (buyType === 'box') {
+          const boxSelection = this.boxSelections.get(race);
+          if (boxSelection && boxSelection.size >= 2) {
+            hasSelection = true;
+            break;
+          }
+          continue;
+        }
+        if (buyType === 'single') {
+          const count = this.singleSetCounts.get(race);
+          if (count && count > 0) {
+            hasSelection = true;
+            break;
+          }
+          continue;
+        }
+        const raceSelections = this.selections.get(race);
+        if (raceSelections) {
+          const first = raceSelections.get(1);
+          const second = raceSelections.get(2);
+          if ((first && first.size > 0) || (second && second.size > 0)) {
+            hasSelection = true;
+            break;
+          }
+        }
+      }
+
+      if (!hasSelection) return;
+
+      const selectionsArray: Array<[number, number[]]> = [];
+      for (let race = 1; race <= 3; race++) {
+        const buyType = this.buyTypes.get(race) || 'formation';
+        if (buyType === 'box') {
+          const boxSelection = this.boxSelections.get(race);
+          if (boxSelection && boxSelection.size >= 2) {
+            // ボックス選択の馬番を保存（キー = 100 + レース番号）
+            selectionsArray.push([BOX_SELECTION_STORAGE_KEY + race, Array.from(boxSelection).sort((a, b) => a - b)]);
+          }
+          continue;
+        }
+        if (buyType === 'single') {
+          // シングル組数を保存（キー = SINGLE_COUNT_STORAGE_KEY + レース番号）
+          const count = this.singleSetCounts.get(race) || 1;
+          selectionsArray.push([SINGLE_COUNT_STORAGE_KEY + race, [count]]);
+          continue;
+        }
+        if (buyType === 'nagashi') {
+          // 流しタイプを保存（キー = NAGASHI_TYPE_STORAGE_KEY + レース番号）
+          const nagashiType = this.nagashiTypes.get(race) || 'first';
+          selectionsArray.push([NAGASHI_TYPE_STORAGE_KEY + race, [nagashiType === 'first' ? 0 : 1]]);
+          // 流し軸馬を保存（キー = NAGASHI_AXIS_STORAGE_KEY + レース番号）
+          const axisHorse = this.nagashiAxisHorses.get(race) || 0;
+          if (axisHorse > 0) {
+            selectionsArray.push([NAGASHI_AXIS_STORAGE_KEY + race, [axisHorse]]);
+          }
+        }
+        const raceSelections = this.selections.get(race);
+        if (!raceSelections) continue;
+        raceSelections.forEach((horses, position) => {
+          if (horses.size > 0) {
+            const key = race * 10 + position;
+            selectionsArray.push([key, Array.from(horses).sort((a, b) => a - b)]);
+          }
+        });
+      }
+
+      const history: CalculationHistory = {
+        id: generateHistoryId(),
+        type: 'triple_umatan',
+        timestamp: Date.now(),
+        unitAmount: this.unitAmount,
+        selections: selectionsArray,
+        buyType: Array.from(this.buyTypes.values()).join(',') // 各レースの買い方をカンマ区切りで保存
+      };
+
+      try {
+        historyManager.scheduleSave(history);
+      } catch (error) {
+        console.error('[トリプル馬単] 履歴の保存に失敗:', error);
+      }
+    }
+  }
+
+  // コンポーネントの初期化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTripleUmatanCalculators);
+  } else {
+    initTripleUmatanCalculators();
+  }
+
+  function initTripleUmatanCalculators(): void {
+    const calculators = document.querySelectorAll('.triple-umatan-calculator');
+    calculators.forEach(calculator => {
+      new TripleUmatanCalculator(calculator as HTMLElement);
+    });
+  }
+</script>
+
+<style>
+  .triple-umatan-calculator {
+    width: 100%;
+  }
+
+  .triple-umatan-section {
+    width: 100%;
+  }
+
+  .races-grid {
+    width: 100%;
+  }
+
+  .race-column {
+    width: 100%;
+  }
+
+  .race-section {
+    width: 100%;
+    height: 100%;
+  }
+
+  .umatan-positions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    width: 100%;
+    align-items: start;
+  }
+
+  @media (min-width: 768px) {
+    .umatan-positions {
+      gap: 1rem;
+    }
+  }
+
+  .position-section {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .position-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .position-controls {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .horses-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .horse-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .horse-item:hover {
+    background-color: #eff6ff;
+    border-color: #3b82f6;
+  }
+
+  .horse-item:has(.horse-checkbox:checked) {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+  }
+
+  .horse-number {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #374151;
+    user-select: none;
+  }
+
+  .buy-type-select {
+    font-size: 0.875rem;
+  }
+
+  .horse-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 1.125rem;
+    height: 1.125rem;
+    background-color: #ffffff !important;
+    border: 2px solid #d1d5db !important;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .horse-checkbox:checked {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+  }
+
+  .horse-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 4px;
+    height: 9px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 1024px) {
+    .races-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .triple-umatan-calculator h2 {
+      font-size: 1.5rem;
+    }
+
+    .race-section {
+      padding: 0.75rem;
+    }
+
+    .horses-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.375rem;
+    }
+
+    .horse-item {
+      padding: 0.375rem;
+    }
+
+    .horse-number {
+      font-size: 0.6875rem;
+    }
+
+    .horse-checkbox {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .triple-umatan-calculator h2 {
+      font-size: 1.25rem;
+    }
+
+    .horses-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.25rem;
+    }
+
+    .horse-item {
+      padding: 0.25rem;
+      gap: 0.125rem;
+    }
+
+    .horse-checkbox {
+      width: 0.875rem;
+      height: 0.875rem;
+    }
+
+    .horse-number {
+      font-size: 0.625rem;
+    }
+  }
+
+  /* ダークモードの影響を防ぐ */
+  @media (prefers-color-scheme: dark) {
+    .horse-checkbox {
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      background-color: #ffffff !important;
+      border: 2px solid #d1d5db !important;
+    }
+
+    .horse-checkbox:checked {
+      background-color: #3b82f6 !important;
+      border-color: #3b82f6 !important;
+    }
+
+    .horse-checkbox:checked::after {
+      border-color: #ffffff !important;
+    }
+  }
+</style>
