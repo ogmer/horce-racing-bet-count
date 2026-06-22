@@ -1,7 +1,7 @@
 ---
 /**
  * 点数表タブコンポーネント
- * 早見表、BOX点数表、フォーメーション、WIN5、トリプル馬単の5つのタブを切り替える
+ * 早見表、フォーメーション、BOX点数表、WIN5、トリプル馬単の5つのタブを切り替える
  */
 import QuickReferenceTable from './QuickReferenceTable.astro';
 import AllBetTypesPointsDisplay from './AllBetTypesPointsDisplay.astro';
@@ -39,16 +39,6 @@ const {
       </button>
       <button
         type="button"
-        id="tab-box-points"
-        role="tab"
-        aria-controls="content-box-points"
-        aria-selected="false"
-        class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-all duration-200"
-      >
-        BOX点数表
-      </button>
-      <button
-        type="button"
         id="tab-formation"
         role="tab"
         aria-controls="content-formation"
@@ -56,6 +46,16 @@ const {
         class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-all duration-200"
       >
         フォーメーション
+      </button>
+      <button
+        type="button"
+        id="tab-box-points"
+        role="tab"
+        aria-controls="content-box-points"
+        aria-selected="false"
+        class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-all duration-200"
+      >
+        BOX点数表
       </button>
       <button
         type="button"
@@ -87,19 +87,19 @@ const {
       <QuickReferenceTable />
     </div>
 
+    <!-- フォーメーションタブ -->
+    <div id="content-formation" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-formation">
+      <FormationCalculator 
+        className="w-full"
+        unitAmount={unitAmount}
+      />
+    </div>
+
     <!-- BOX点数表タブ -->
     <div id="content-box-points" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-box-points">
       <AllBetTypesPointsDisplay 
         className="w-full"
         horseCount={horseCount}
-        unitAmount={unitAmount}
-      />
-    </div>
-
-    <!-- フォーメーションタブ -->
-    <div id="content-formation" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-formation">
-      <FormationCalculator 
-        className="w-full"
         unitAmount={unitAmount}
       />
     </div>
@@ -284,4 +284,3 @@ const {
     }
   }
 </style>
-

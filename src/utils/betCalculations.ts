@@ -80,7 +80,7 @@ export const BET_TYPES: BetType[] = [
 ];
 
 // プリセット金額の定義
-export const PRESET_AMOUNTS = [100, 200, 500, 1000] as const;
+export const PRESET_AMOUNTS = [100, 200, 500, 1000, 10000] as const;
 
 // デフォルト金額
 export const DEFAULT_AMOUNT = 100;

@@ -3,7 +3,7 @@
  * フォーメーション計算コンポーネント
  * 各買い目で選んだ馬の点数を計算する
  */
-import { getAllBetTypes, formatYenAmount } from '../utils/betCalculations';
+import { getAllBetTypes, formatYenAmount, getPresetAmounts } from '../utils/betCalculations';
 
 export interface Props {
   unitAmount?: number;
@@ -16,8 +16,10 @@ const {
 } = Astro.props;
 
 const allBetTypes = getAllBetTypes();
-// 単勝・複勝を除外
-const betTypes = allBetTypes.filter(bt => bt.id !== 'tansho' && bt.id !== 'fukusho');
+// フォーメーション計算で扱わない馬券種を除外
+const betTypes = allBetTypes.filter(
+  bt => bt.id !== 'tansho' && bt.id !== 'fukusho' && bt.id !== 'triple_umatan'
+);
 
 // 枠の色定義
 const frameColors = [
@@ -32,7 +34,7 @@ const frameColors = [
 ];
 ---
 
-<div class={`formation-calculator ${className}`}>
+<div class={`formation-calculator ${className}`} data-initial-amount={unitAmount}>
   <h2 class="text-xl font-bold text-gray-800 mb-4">フォーメーション計算</h2>
   
   <div class="formation-section p-4 bg-white border-2 border-gray-200 rounded-lg">
@@ -154,8 +156,62 @@ const frameColors = [
       </div>
     </div>
 
+    <!-- 1点当たりの金額選択 -->
+    <div class="formation-amount-selection my-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+      <label class="block text-base font-semibold text-gray-700 mb-3">
+        1点当たりの金額
+      </label>
+
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+        {getPresetAmounts().map((amount) => (
+          <button
+            type="button"
+            data-formation-preset-amount={amount}
+            class={`formation-preset-button ${
+              unitAmount === amount
+                ? 'selected bg-blue-400 text-white border-blue-500 shadow-lg'
+                : 'unselected bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:border-blue-300'
+            } border-2 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+            aria-pressed={unitAmount === amount}
+          >
+            {formatYenAmount(amount)}
+          </button>
+        ))}
+      </div>
+
+      <div class="flex items-start gap-3">
+        <div class="flex-1">
+          <div class="relative">
+            <input
+              type="text"
+              id="formation-custom-amount-input"
+              placeholder="金額を入力"
+              class="formation-custom-input w-full px-4 py-3 pr-10 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+              maxlength="10"
+              inputmode="numeric"
+            />
+            <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">円</span>
+          </div>
+          <div id="formation-amount-error-message" class="error-message mt-2 text-sm text-red-600 hidden">
+            <span class="error-text"></span>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="formation-clear-custom-button"
+          class="clear-button px-4 py-3 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          title="クリア"
+          aria-label="金額入力をクリア"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
     <!-- 計算結果 -->
-    <div class="calculation-results mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="calculation-results grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {betTypes.map((betType) => (
         <div class="calculation-result">
           <div class="result-display p-3 bg-white border border-gray-200 rounded-lg">
@@ -173,7 +229,7 @@ const frameColors = [
 </div>
 
 <script>
-  import { formatYenAmount, getMinimumHorseCount } from '../utils/betCalculations';
+  import { DEFAULT_AMOUNT, formatYenAmount, getMinimumHorseCount, validateCustomAmount } from '../utils/betCalculations';
   import {
     getHistory,
     historyManager,
@@ -188,6 +244,10 @@ const frameColors = [
     // パフォーマンス最適化: DOM要素と計算結果のキャッシュ
     private resultDisplays: Map<string, HTMLElement> = new Map();
     private amountDisplays: Map<string, HTMLElement> = new Map();
+    private presetButtons: NodeListOf<HTMLButtonElement>;
+    private customInput: HTMLInputElement | null = null;
+    private errorContainer: HTMLElement | null = null;
+    private clearCustomButton: HTMLButtonElement | null = null;
     private calculationCache: Map<string, { points: number; timestamp: number }> = new Map();
     private updateFrameId: number | null = null;
     // 賭け式の依存関係: 各賭け式がどのpositionに依存するか
@@ -202,14 +262,20 @@ const frameColors = [
 
     constructor(container: HTMLElement) {
       this.container = container;
+      this.presetButtons = container.querySelectorAll('.formation-preset-button');
       this.init();
     }
 
     private init(): void {
+      this.initializeAmount();
+      this.setupAmountControls();
+
       // 金額変更イベントをリッスン
       document.addEventListener('amountChange', (event: any) => {
         if (event.detail && typeof event.detail.amount === 'number') {
+          if (event.detail.source === 'formation') return;
           this.unitAmount = event.detail.amount;
+          this.updateAmountControlState();
           this.updateAllCalculations();
         }
       });
@@ -270,6 +336,94 @@ const frameColors = [
 
       // 初期表示を更新
       this.updateAllCalculations();
+    }
+
+    private initializeAmount(): void {
+      const initialAmount = parseInt(this.container.getAttribute('data-initial-amount') || '', 10);
+      if (!Number.isNaN(initialAmount) && initialAmount > 0) {
+        this.unitAmount = initialAmount;
+      }
+    }
+
+    private setupAmountControls(): void {
+      this.customInput = this.container.querySelector('#formation-custom-amount-input') as HTMLInputElement;
+      this.errorContainer = this.container.querySelector('#formation-amount-error-message') as HTMLElement;
+      this.clearCustomButton = this.container.querySelector('#formation-clear-custom-button') as HTMLButtonElement;
+
+      this.presetButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const amount = parseInt(button.dataset.formationPresetAmount || '0', 10);
+          if (amount > 0) {
+            if (this.customInput) this.customInput.value = '';
+            this.hideAmountError();
+            this.setUnitAmount(amount);
+          }
+        });
+      });
+
+      if (this.customInput) {
+        this.customInput.addEventListener('input', () => {
+          const validation = validateCustomAmount(this.customInput?.value || '');
+          if (!validation.isValid) {
+            this.showAmountError(validation.errorMessage || '有効な金額を入力してください');
+            return;
+          }
+
+          this.hideAmountError();
+          this.setUnitAmount(validation.value);
+        });
+      }
+
+      if (this.clearCustomButton) {
+        this.clearCustomButton.addEventListener('click', () => {
+          if (this.customInput) this.customInput.value = '';
+          this.hideAmountError();
+          this.setUnitAmount(DEFAULT_AMOUNT);
+        });
+      }
+
+      this.updateAmountControlState();
+    }
+
+    private setUnitAmount(amount: number): void {
+      this.unitAmount = amount;
+      this.updateAmountControlState();
+      this.updateAllCalculations();
+      document.dispatchEvent(new CustomEvent('amountChange', {
+        detail: {
+          amount: this.unitAmount,
+          source: 'formation'
+        }
+      }));
+    }
+
+    private updateAmountControlState(): void {
+      this.presetButtons.forEach(button => {
+        const amount = parseInt(button.dataset.formationPresetAmount || '0', 10);
+        const selected = amount === this.unitAmount;
+        button.classList.toggle('selected', selected);
+        button.classList.toggle('bg-blue-400', selected);
+        button.classList.toggle('text-white', selected);
+        button.classList.toggle('border-blue-500', selected);
+        button.classList.toggle('shadow-lg', selected);
+        button.classList.toggle('unselected', !selected);
+        button.classList.toggle('bg-white', !selected);
+        button.classList.toggle('text-gray-700', !selected);
+        button.classList.toggle('border-gray-300', !selected);
+        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      });
+    }
+
+    private showAmountError(message: string): void {
+      if (!this.errorContainer) return;
+      const errorText = this.errorContainer.querySelector('.error-text');
+      if (errorText) errorText.textContent = message;
+      this.errorContainer.classList.remove('hidden');
+    }
+
+    private hideAmountError(): void {
+      if (!this.errorContainer) return;
+      this.errorContainer.classList.add('hidden');
     }
 
     private cacheDisplayElements(): void {

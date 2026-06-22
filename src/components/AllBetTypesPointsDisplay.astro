@@ -67,7 +67,6 @@ const betTypes = groupedBetTypes;
     <label for="box-horse-count-input" class="block text-base font-semibold text-gray-700 mb-3">
       BOX買いの頭数を選択
     </label>
-    <p class="text-xs text-gray-500 mb-3">範囲：1頭〜18頭</p>
     <div class="flex items-center space-x-3">
       <button
         type="button"
@@ -110,8 +109,7 @@ const betTypes = groupedBetTypes;
     
     <!-- プリセット金額ボタン -->
     <div class="preset-amounts mb-4">
-      <h4 class="text-sm font-medium text-gray-600 mb-3">プリセット金額</h4>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {getPresetAmounts().map((amount) => (
           <button
             type="button"
@@ -131,7 +129,6 @@ const betTypes = groupedBetTypes;
 
     <!-- カスタム金額入力 -->
     <div class="custom-amount">
-      <h4 class="text-sm font-medium text-gray-600 mb-3">カスタム金額</h4>
       <div class="flex items-center space-x-3">
         <div class="flex-1">
           <div class="relative">
@@ -186,7 +183,7 @@ const betTypes = groupedBetTypes;
               
               {isValid ? (
                 <div>
-                  <div class="points-amount-row flex items-end justify-between mb-2">
+                  <div class="points-amount-row flex items-end justify-between">
                     <div class="points-display pl-2">
                       <div class="text-sm text-gray-600">点数</div>
                       <div class="text-2xl font-bold text-blue-600">{points}点</div>
@@ -198,12 +195,6 @@ const betTypes = groupedBetTypes;
                       </div>
                     </div>
                   </div>
-                  
-                  <div class="calculation-display mb-2">
-                    <div class="text-xs text-gray-500">
-                      {horseCount}頭のBOX買い
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <div class="invalid-message text-sm text-gray-500">
@@ -213,7 +204,7 @@ const betTypes = groupedBetTypes;
             </div>
             
             {betType.description ? (
-              <div class={`bet-type-description border-t border-gray-200 text-xs text-blue-600 leading-relaxed ${
+              <div class={`bet-type-description text-xs text-blue-600 leading-relaxed ${
                 betType.id === 'wakuren' 
                   ? 'mt-2 pt-2' 
                   : 'mt-1 pt-1 md:mt-1 md:pt-1'
@@ -239,13 +230,13 @@ const betTypes = groupedBetTypes;
         <!-- Will be populated based on validity -->
       </div>
     </div>
-    <div class="bet-type-description border-t border-gray-200 text-xs text-blue-600 leading-relaxed hidden">
+    <div class="bet-type-description text-xs text-blue-600 leading-relaxed hidden">
     </div>
   </div>
 </template>
 
 <template id="valid-card-content-template">
-  <div class="points-amount-row flex items-end justify-between mb-2">
+  <div class="points-amount-row flex items-end justify-between">
     <div class="points-display">
       <div class="text-sm text-gray-600">点数</div>
       <div class="text-2xl font-bold text-blue-600 points-value"></div>
@@ -254,9 +245,6 @@ const betTypes = groupedBetTypes;
       <div class="text-xs text-gray-600 mb-1">合計金額</div>
       <div class="text-lg font-semibold text-green-600 amount-value"></div>
     </div>
-  </div>
-  <div class="calculation-display mb-2">
-    <div class="text-xs text-gray-500 horse-count-display"></div>
   </div>
 </template>
 
@@ -858,11 +846,9 @@ const betTypes = groupedBetTypes;
             const validContent = validTemplate.content.cloneNode(true) as DocumentFragment;
             const pointsValue = validContent.querySelector('.points-value');
             const amountValue = validContent.querySelector('.amount-value');
-            const horseCountDisplay = validContent.querySelector('.horse-count-display');
 
             if (pointsValue) pointsValue.textContent = `${points}点`;
             if (amountValue) amountValue.textContent = formatYenAmount(totalAmount);
-            if (horseCountDisplay) horseCountDisplay.textContent = `${this.horseCount}頭のBOX買い`;
 
             contentContainer.appendChild(validContent);
           } else {
@@ -935,12 +921,6 @@ const betTypes = groupedBetTypes;
         amountDisplay.textContent = formatYenAmount(totalAmount);
       }
 
-      // 頭数表示を更新
-      const calculationDisplay = card.querySelector('.calculation-display .text-xs');
-      if (calculationDisplay) {
-        calculationDisplay.textContent = `${this.horseCount}頭のBOX買い`;
-      }
-
       // 無効メッセージ/有効表示の切り替え
       const flexDiv = card.querySelector('.flex-1');
       if (flexDiv) {
@@ -953,7 +933,7 @@ const betTypes = groupedBetTypes;
           if (invalidMsg) invalidMsg.remove();
 
           const displayHTML = `
-            <div class="points-amount-row flex items-end justify-between mb-2">
+            <div class="points-amount-row flex items-end justify-between">
               <div class="points-display pl-2">
                 <div class="text-sm text-gray-600">点数</div>
                 <div class="text-2xl font-bold text-blue-600">${points}点</div>
@@ -965,11 +945,6 @@ const betTypes = groupedBetTypes;
                 </div>
               </div>
             </div>
-            <div class="calculation-display mb-2">
-              <div class="text-xs text-gray-500">
-                ${this.horseCount}頭のBOX買い
-              </div>
-            </div>
           `;
           const nameDiv = flexDiv.querySelector('.bet-type-name');
           if (nameDiv) {
@@ -978,9 +953,7 @@ const betTypes = groupedBetTypes;
         } else if (!isValid && !hasInvalidDisplay) {
           // 無効メッセージを追加
           const pointsRow = flexDiv.querySelector('.points-amount-row');
-          const calcDisplay = flexDiv.querySelector('.calculation-display');
           if (pointsRow) pointsRow.remove();
-          if (calcDisplay) calcDisplay.remove();
 
           const nameDiv = flexDiv.querySelector('.bet-type-name');
           if (nameDiv) {
@@ -1205,24 +1178,20 @@ const betTypes = groupedBetTypes;
       margin-bottom: 0.375rem;
     }
 
-    .points-display .text-sm {
+    .all-bet-types-points-display :global(.points-display .text-sm) {
       font-size: 0.6875rem;
     }
 
-    .points-display .text-2xl {
+    .all-bet-types-points-display :global(.points-display .text-2xl) {
       font-size: 1.125rem;
     }
 
-    .amount-display .text-xs {
+    .all-bet-types-points-display :global(.amount-display .text-xs) {
       font-size: 0.625rem;
     }
 
-    .amount-display .text-lg {
+    .all-bet-types-points-display :global(.amount-display .text-lg) {
       font-size: 0.875rem;
-    }
-
-    .calculation-display .text-xs {
-      font-size: 0.6875rem;
     }
 
     .bet-type-description {
