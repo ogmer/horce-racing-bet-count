@@ -82,6 +82,8 @@ const betTypes = groupedBetTypes;
       <input
         type="number"
         id="box-horse-count-input"
+        inputmode="numeric"
+        pattern="[0-9]*"
         min="1"
         max="18"
         value={horseCount || 1}
@@ -135,6 +137,8 @@ const betTypes = groupedBetTypes;
             <input
               type="text"
               id="box-custom-amount-input"
+              inputmode="numeric"
+              pattern="[0-9]*"
               placeholder="金額を入力"
               class="custom-input w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
               maxlength="10"
@@ -683,6 +687,32 @@ const betTypes = groupedBetTypes;
           }
         });
       }
+
+      // スマホ対応: 入力欄以外をタップしたらフォーカスを外す
+      this.setupMobileFocusHandling();
+    }
+
+    private setupMobileFocusHandling(): void {
+      // 入力欄以外の領域をタップしたときにフォーカスを外す
+      document.addEventListener('touchstart', (event: TouchEvent) => {
+        const target = event.target as HTMLElement;
+
+        // タップされた要素が入力欄やボタンでない場合
+        if (
+          target !== this.countInput &&
+          target !== this.customInput &&
+          !target.closest('button') &&
+          !target.closest('input')
+        ) {
+          // アクティブな入力欄からフォーカスを外す
+          if (this.countInput && document.activeElement === this.countInput) {
+            this.countInput.blur();
+          }
+          if (this.customInput && document.activeElement === this.customInput) {
+            this.customInput.blur();
+          }
+        }
+      }, { passive: true });
     }
 
     private setHorseCount(count: number): void {

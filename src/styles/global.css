@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/* フォント設定 - 日本語Webサイト向けの統一されたフォントスタック */
+html {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+}
+
+/* 等幅フォントが必要な要素 */
+code, kbd, samp, pre {
+  font-family: "SF Mono", "Consolas", "Liberation Mono", "Menlo", "Courier", monospace;
+}
+
 /* ダークモードの影響を防ぐため、明示的にライトモードを設定 */
 html {
   background-color: #ffffff !important;
