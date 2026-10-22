@@ -18,16 +18,16 @@
 
 ```bash
 # 依存関係のインストール
-bun install
+npm install
 
 # 開発サーバーの起動
-bun run dev
+npm run dev
 
 # ビルド
-bun run build
+npm run build
 
 # プレビュー
-bun run preview
+npm run preview
 ```
 
 ## ライセンス

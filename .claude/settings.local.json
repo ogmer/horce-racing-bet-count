@@ -6,9 +6,7 @@
       "Bash(npm run dev:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(bun run dev)",
       "Bash(timeout /t 5)",
-      "Bash(bun run build:*)",
       "Bash(git push:*)",
       "Bash(dir:*)",
       "Bash(findstr:*)",
@@ -20,10 +18,7 @@
       "Bash(npm install:*)",
       "Bash(del \"C:\\\\Users\\\\mrtor\\\\OneDrive\\\\ドキュメント\\\\horce-racing-bet-count\\\\public\\\\sitemap.xml\")",
       "WebFetch(domain:www.nankankeiba.com)",
-      "Bash(wc:*)",
-      "Bash(bun update:*)",
-      "Bash(bun install)",
-      "Bash(bun dev)"
+      "Bash(wc:*)"
     ]
   }
 }
